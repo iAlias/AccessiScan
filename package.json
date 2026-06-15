@@ -10,6 +10,8 @@
     "db:migrate:test": "dotenv -e .env.test -- pnpm --filter @accessscan/db prisma migrate deploy",
     "db:seed": "dotenv -e .env -- pnpm --filter @accessscan/db exec tsx prisma/seed.ts",
     "test": "vitest run",
+    "test:browser": "vitest run -c vitest.browser.config.ts",
+    "test:all": "vitest run && vitest run -c vitest.browser.config.ts",
     "test:watch": "vitest"
   },
   "devDependencies": {

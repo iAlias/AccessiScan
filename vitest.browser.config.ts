@@ -6,8 +6,9 @@ config({ path: ".env.test" });
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["packages/**/tests/**/*.test.ts", "apps/**/tests/**/*.test.ts"],
-    exclude: ["**/node_modules/**", "**/*.browser.test.ts"],
+    include: ["packages/**/tests/**/*.browser.test.ts"],
+    testTimeout: 60_000,
+    hookTimeout: 60_000,
     fileParallelism: false,
   },
 });
