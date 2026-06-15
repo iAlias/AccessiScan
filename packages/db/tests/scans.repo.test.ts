@@ -3,6 +3,7 @@ import { prisma } from "../src/client.js";
 import { resetDb } from "./helpers/reset-db.js";
 import { createDomain, createProject } from "../src/index.js";
 import { createScan, markScanRunning, persistPageWithIssues, markScanDone, markScanFailed } from "../src/repositories/scans.js";
+import type { AuthState } from "@prisma/client";
 
 beforeEach(resetDb);
 afterAll(() => prisma.$disconnect());
@@ -45,4 +46,14 @@ test("markScanFailed sets FAILED", async () => {
   const scan = await createScan(d.id);
   await markScanFailed(scan.id);
   expect((await prisma.scan.findUnique({ where: { id: scan.id } }))?.status).toBe("FAILED");
+});
+
+test("persistPageWithIssues records authState (defaults ANON)", async () => {
+  const d = await seedDomain();
+  const scan = await createScan(d.id);
+  await persistPageWithIssues(scan.id, { url: "https://a.it/acct", httpStatus: 200, depth: 0, discoveredVia: "BFS", authState: "AUTHED" as AuthState }, []);
+  await persistPageWithIssues(scan.id, { url: "https://a.it/pub", httpStatus: 200, depth: 0, discoveredVia: "BFS" }, []);
+  const pages = await prisma.page.findMany({ where: { scanId: scan.id }, orderBy: { url: "asc" } });
+  expect(pages.find((p) => p.url.endsWith("/acct"))?.authState).toBe("AUTHED");
+  expect(pages.find((p) => p.url.endsWith("/pub"))?.authState).toBe("ANON");
 });

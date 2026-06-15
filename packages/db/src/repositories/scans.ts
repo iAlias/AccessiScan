@@ -1,5 +1,5 @@
 import { prisma } from "../client.js";
-import type { Scan, DiscoveredVia, Impact, Prisma } from "@prisma/client";
+import type { Scan, DiscoveredVia, Impact, AuthState, Prisma } from "@prisma/client";
 
 export interface IssueInput {
   ruleId: string;
@@ -19,6 +19,7 @@ export interface PageInput {
   httpStatus: number;
   depth: number;
   discoveredVia: DiscoveredVia;
+  authState?: AuthState;
 }
 
 export function createScan(domainId: string): Promise<Scan> {
@@ -46,6 +47,7 @@ export async function persistPageWithIssues(scanId: string, page: PageInput, iss
       httpStatus: page.httpStatus,
       depth: page.depth,
       discoveredVia: page.discoveredVia,
+      authState: page.authState ?? "ANON",
       scannedAt: new Date(),
       issues: {
         create: [...byFingerprint.values()].map(({ issue, count }) => ({
