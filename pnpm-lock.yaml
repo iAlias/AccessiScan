@@ -32,6 +32,9 @@ importers:
       '@accessscan/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@accessscan/scanner':
+        specifier: workspace:*
+        version: link:../../packages/scanner
       '@accessscan/validation':
         specifier: workspace:*
         version: link:../../packages/validation
