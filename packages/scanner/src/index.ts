@@ -6,3 +6,4 @@ export * from "./mapper.js";
 export { issueFingerprint, normalizeHtml } from "./fingerprint.js";
 export { scanUrl, closeBrowser, getBrowser, type ScanResult } from "./scanner.js";
 export { makeFetchPage } from "./playwright-adapter.js";
+export { runScan } from "./run-scan.js";
