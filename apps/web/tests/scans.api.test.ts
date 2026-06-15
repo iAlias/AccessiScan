@@ -1,7 +1,7 @@
 import { beforeEach, afterAll, expect, test, vi } from "vitest";
-import { prisma, createProject, createDomain } from "@accessscan/db";
+import { prisma, createProject, createDomain, createScan } from "@accessscan/db";
 import { resetDb } from "../../../packages/db/tests/helpers/reset-db.js";
-import { handleTriggerScan, handleListScans } from "../src/app/api/domains/[id]/scans/handlers.js";
+import { handleTriggerScan, handleListScans, handleGetScan } from "../src/app/api/domains/[id]/scans/handlers.js";
 
 beforeEach(resetDb);
 afterAll(() => prisma.$disconnect());
@@ -36,4 +36,14 @@ test("handleListScans returns scans newest-first", async () => {
   const res = await handleListScans(d.id);
   expect(res.status).toBe(200);
   expect((res.body as unknown[]).length).toBe(1);
+});
+
+test("handleGetScan returns a scan with its criterion results or 404", async () => {
+  const d = await seedDomain();
+  const scan = await createScan(d.id);
+  const ok = await handleGetScan(scan.id);
+  expect(ok.status).toBe(200);
+  expect((ok.body as { id: string }).id).toBe(scan.id);
+  const miss = await handleGetScan("nope");
+  expect(miss.status).toBe(404);
 });

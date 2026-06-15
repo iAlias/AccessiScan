@@ -17,3 +17,12 @@ export async function handleListScans(domainId: string): Promise<HandlerResult<u
   const scans = await prisma.scan.findMany({ where: { domainId }, orderBy: { createdAt: "desc" } });
   return { status: 200, body: scans };
 }
+
+export async function handleGetScan(scanId: string): Promise<HandlerResult<unknown>> {
+  const scan = await prisma.scan.findUnique({
+    where: { id: scanId },
+    include: { criterionResults: true, scoreHistory: true, diff: true, pages: { include: { issues: true } } },
+  });
+  if (!scan) return { status: 404, body: { error: "scan not found" } };
+  return { status: 200, body: scan };
+}
