@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum ScanStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum ScanTrigger {
+  MANUAL
+  SCHEDULED
+}
+
+enum Verdict {
+  CONFORME
+  PARZIALMENTE
+  NON_CONFORME
+  NON_DETERMINABILE
+}
+
+enum DiscoveredVia {
+  SITEMAP
+  BFS
+  MANUAL
+}
+
+enum AuthState {
+  ANON
+  AUTHED
+}
+
+enum Impact {
+  CRITICAL
+  SERIOUS
+  MODERATE
+  MINOR
+}
+
+enum IssueStatus {
+  OPEN
+  FIXED
+  IGNORED
+  SNOOZED
+}
+
+enum CriterionState {
+  PASS
+  FAIL
+  NEEDS_MANUAL_REVIEW
+  NOT_APPLICABLE
+}
+
+enum ResultSource {
+  AUTOMATED
+  MANUAL
+}
+
+enum ConformanceStatus {
+  CONFORME
+  PARZIALMENTE
+  NON_CONFORME
+}
+
+enum ReportType {
+  PDF
+  CSV
+  JSON
+}
+
+model User {
+  id                String            @id @default(cuid())
+  email             String            @unique
+  name              String
+  passwordHash      String
+  role              Role              @default(MEMBER)
+  createdAt         DateTime          @default(now())
+  projects          Project[]
+  assignedIssues    Issue[]           @relation("IssueAssignee")
+  reviewedCriteria  CriterionResult[] @relation("CriterionReviewer")
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  domains   Domain[]
+  createdAt DateTime @default(now())
+}
+
+model Domain {
+  id                String                 @id @default(cuid())
+  projectId         String
+  project           Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  baseUrl           String
+  registrableDomain String
+  crawlConfig       Json
+  standardProfile   String                 @default("wcag21aa-en301549")
+  scheduleCron      String?
+  createdAt         DateTime               @default(now())
+  loginRecipe       LoginRecipe?
+  credentials       Credential[]
+  scans             Scan[]
+  scoreHistory      ScoreHistory[]
+  statement         AccessibilityStatement?
+}
+
+model LoginRecipe {
+  id           String   @id @default(cuid())
+  domainId     String   @unique
+  domain       Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  loginUrl     String
+  steps        Json
+  waitFor      Json
+  successCheck Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Credential {
+  id         String   @id @default(cuid())
+  domainId   String
+  domain     Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  label      String
+  ciphertext String
+  iv         String
+  authTag    String
+  wrappedDek String
+  keyId      String
+  createdAt  DateTime @default(now())
+}
+
+model Scan {
+  id               String            @id @default(cuid())
+  domainId         String
+  domain           Domain            @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  status           ScanStatus        @default(QUEUED)
+  trigger          ScanTrigger       @default(MANUAL)
+  engineVersions   Json?
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  pagesScanned     Int               @default(0)
+  score            Float?
+  verdict          Verdict?
+  coverageRatio    Float?
+  createdAt        DateTime          @default(now())
+  pages            Page[]
+  issues           Issue[]
+  criterionResults CriterionResult[]
+  scoreHistory     ScoreHistory?
+  diff             ScanDiff?         @relation("ScanDiffOwner")
+  reports          Report[]
+}
+
+model Page {
+  id            String        @id @default(cuid())
+  scanId        String
+  scan          Scan          @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  url           String
+  httpStatus    Int?
+  depth         Int           @default(0)
+  discoveredVia DiscoveredVia @default(BFS)
+  authState     AuthState     @default(ANON)
+  pageScore     Float?
+  scannedAt     DateTime?
+  issues        Issue[]
+}
+
+model Issue {
+  id              String      @id @default(cuid())
+  pageId          String
+  page            Page        @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  scanId          String
+  scan            Scan        @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  ruleId          String
+  wcagSc          String
+  en301549Clause  String?
+  impact          Impact?
+  help            String?
+  helpUrl         String?
+  htmlSnippet     String?
+  targetSelector  String
+  failureSummary  String?
+  status          IssueStatus @default(OPEN)
+  assigneeId      String?
+  assignee        User?       @relation("IssueAssignee", fields: [assigneeId], references: [id])
+  fingerprint     String
+  occurrenceCount Int         @default(1)
+  createdAt       DateTime    @default(now())
+
+  @@index([scanId])
+  @@index([fingerprint])
+}
+
+model CriterionResult {
+  id             String         @id @default(cuid())
+  scanId         String
+  scan           Scan           @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  wcagSc         String
+  en301549Clause String?
+  state          CriterionState
+  source         ResultSource   @default(AUTOMATED)
+  reviewerId     String?
+  reviewer       User?          @relation("CriterionReviewer", fields: [reviewerId], references: [id])
+  reviewedAt     DateTime?
+
+  @@unique([scanId, wcagSc])
+}
+
+model ScoreHistory {
+  id               String   @id @default(cuid())
+  domainId         String
+  domain           Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  scanId           String   @unique
+  scan             Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  score            Float
+  verdict          Verdict
+  failCount        Int
+  needsReviewCount Int
+  passCount        Int
+  capturedAt       DateTime @default(now())
+
+  @@index([domainId, capturedAt])
+}
+
+model ScanDiff {
+  id                 String  @id @default(cuid())
+  scanId             String  @unique
+  scan               Scan    @relation("ScanDiffOwner", fields: [scanId], references: [id], onDelete: Cascade)
+  prevScanId         String?
+  newIssueIds        Json
+  fixedIssueIds      Json
+  persistentIssueIds Json
+}
+
+model AccessibilityStatement {
+  id                   String            @id @default(cuid())
+  domainId             String            @unique
+  domain               Domain            @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  conformanceStatus    ConformanceStatus
+  nonAccessibleContent Json
+  method               String
+  feedbackContact      String?
+  enforcementRoute     String?
+  lastUpdated          DateTime?
+  nextReviewDue        DateTime?
+}
+
+model Report {
+  id            String     @id @default(cuid())
+  scanId        String
+  scan          Scan       @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  type          ReportType
+  storageUrl    String
+  verapdfPassed Boolean?
+  generatedAt   DateTime   @default(now())
+}
