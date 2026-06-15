@@ -26,3 +26,26 @@ export const createDomainSchema = z.object({
   scheduleCron: z.string().nullable().optional(),
 });
 export type CreateDomainBody = z.infer<typeof createDomainSchema>;
+
+const waitForSchema = z.object({
+  type: z.enum(["selector", "urlContains"]),
+  value: z.string().min(1),
+});
+
+export const loginRecipeSchema = z.object({
+  loginUrl: z.string().url().refine((u) => /^https?:\/\//.test(u), { message: "loginUrl must be http(s)" }),
+  steps: z.array(z.object({
+    action: z.enum(["fill", "click"]),
+    selector: z.string().min(1),
+    valueRef: z.string().optional(),
+  })),
+  waitFor: waitForSchema,
+  successCheck: waitForSchema,
+});
+export type LoginRecipeBody = z.infer<typeof loginRecipeSchema>;
+
+export const createCredentialSchema = z.object({
+  label: z.string().min(1).max(120),
+  secret: z.string().min(1),
+});
+export type CreateCredentialBody = z.infer<typeof createCredentialSchema>;
