@@ -18,3 +18,4 @@ export {
   type EncryptedRow,
 } from "./lib/vault.js";
 export * from "./repositories/credentials.js";
+export * from "./repositories/login-recipes.js";
