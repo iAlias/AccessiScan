@@ -11,9 +11,9 @@ const AXE_TAG_TO_SC: Record<string, string> = {
 export function parseWcagTag(tag: string): string | null {
   const m = /^wcag(\d{3,})$/.exec(tag);
   if (!m) return null;
-  const d = m[1];
+  const d = m[1]!;
   const criterion = d.slice(2).replace(/^0+(?=\d)/, "");
-  return `${d[0]}.${d[1]}.${criterion}`;
+  return `${d[0]!}.${d[1]!}.${criterion}`;
 }
 
 export function deriveWcagSc(tags: string[]): string | null {
@@ -21,7 +21,7 @@ export function deriveWcagSc(tags: string[]): string | null {
   if (scTags.length === 0) return null;
   scTags.sort();
   for (const t of scTags) if (AXE_TAG_TO_SC[t]) return AXE_TAG_TO_SC[t];
-  return parseWcagTag(scTags[0]);
+  return parseWcagTag(scTags[0]!);
 }
 
 export function en301549Clause(wcagSc: string | null): string | null {
