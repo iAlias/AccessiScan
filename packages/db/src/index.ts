@@ -6,3 +6,14 @@ export { registrableDomain } from "./lib/registrable-domain.js";
 export * from "./repositories/scans.js";
 export { defaultCrawlConfig, type CrawlConfig } from "./lib/crawl-defaults.js";
 export * from "./repositories/scoring.js";
+export {
+  encryptSecret,
+  decryptSecret,
+  rewrapDek,
+  resetMasterKeyCache,
+  secretsEqual,
+  PlaintextCache,
+  CURRENT_KEY_ID,
+  type EncryptedSecret,
+  type EncryptedRow,
+} from "./lib/vault.js";
