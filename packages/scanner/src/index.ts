@@ -4,3 +4,4 @@ export { fetchSitemapUrls } from "./sitemap.js";
 export { loadRobots, type RobotsInfo } from "./robots.js";
 export * from "./mapper.js";
 export { issueFingerprint, normalizeHtml } from "./fingerprint.js";
+export { scanUrl, closeBrowser, getBrowser, type ScanResult } from "./scanner.js";
