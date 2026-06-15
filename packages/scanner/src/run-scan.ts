@@ -41,7 +41,7 @@ export async function runScan(scanId: string): Promise<void> {
     for (const sm of sitemapSources) seeds.push(...(await fetchSitemapUrls(sm, fetchText, seen)));
 
     const page = await context.newPage();
-    const urls = await crawl(domain.baseUrl, cfg, {
+    const pages = await crawl(domain.baseUrl, cfg, {
       fetchPage: makeFetchPage(page),
       fetchText,
       seeds,
@@ -50,16 +50,19 @@ export async function runScan(scanId: string): Promise<void> {
     await page.close();
 
     let scanned = 0;
-    for (const url of urls) {
+    let skipped = 0;
+    for (const cp of pages) {
+      if (cp.status < 200 || cp.status >= 300) { skipped += 1; continue; }
       try {
-        const { violations } = await scanUrl(url);
+        const { violations } = await scanUrl(cp.url);
         const issues = violations.flatMap((rule) => rule.nodes.map((node) => toIssueRow(rule, node)));
-        await persistPageWithIssues(scanId, { url, httpStatus: 200, depth: 0, discoveredVia: "BFS" }, issues);
+        await persistPageWithIssues(scanId, { url: cp.url, httpStatus: cp.status, depth: cp.depth, discoveredVia: cp.discoveredVia }, issues);
         scanned += 1;
       } catch {
-        // skip a page that failed to scan; continue the scan
+        skipped += 1;
       }
     }
+    await markScanRunning(scanId, { axe: "4.11.4", playwright: "1.61.0", profile: "wcag21aa-en301549", skipped });
     await markScanDone(scanId, scanned);
   } catch (err) {
     await markScanFailed(scanId);

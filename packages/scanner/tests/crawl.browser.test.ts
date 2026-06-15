@@ -18,5 +18,5 @@ it("crawls the fixture site and finds all 3 pages", async () => {
     fetchText: async (u) => { const r = await fetch(u); return r.ok ? r.text() : null; },
     sleep: async () => {},
   });
-  expect(out.sort()).toEqual([srv.url("/"), srv.url("/about"), srv.url("/contact")].sort());
+  expect(out.map((p) => p.url).sort()).toEqual([srv.url("/"), srv.url("/about"), srv.url("/contact")].sort());
 }, 60_000);
