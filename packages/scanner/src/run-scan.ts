@@ -1,6 +1,7 @@
 import {
   prisma, markScanRunning, persistPageWithIssues, markScanDone, markScanFailed,
   defaultCrawlConfig, type CrawlConfig,
+  persistScanScoring, loadCurrentScanIssues, getPreviousScanIssues,
 } from "@accessscan/db";
 import { getBrowser, scanUrl } from "./scanner.js";
 import { crawl } from "./crawl.js";
@@ -8,6 +9,10 @@ import { makeFetchPage } from "./playwright-adapter.js";
 import { loadRobots } from "./robots.js";
 import { fetchSitemapUrls } from "./sitemap.js";
 import { toIssueRow } from "./mapper.js";
+import { collectPageFindings, collectSCSets } from "./sc-mapping.js";
+import { buildScanAnalysis } from "./scan-analysis.js";
+import type { CriterionFinding } from "./sc-mapping.js";
+import type { SCId } from "./wcag-catalog.js";
 
 const UA = "AccessScanBot";
 
@@ -49,20 +54,30 @@ export async function runScan(scanId: string): Promise<void> {
     });
     await page.close();
 
+    const perPageFindings: CriterionFinding[][] = [];
+    const reviewSCs = new Set<SCId>();
+
     let scanned = 0;
     let skipped = 0;
     for (const cp of pages) {
       if (cp.status < 200 || cp.status >= 300) { skipped += 1; continue; }
       try {
-        const { violations } = await scanUrl(cp.url);
+        const { violations, incomplete } = await scanUrl(cp.url);
         const issues = violations.flatMap((rule) => rule.nodes.map((node) => toIssueRow(rule, node)));
         await persistPageWithIssues(scanId, { url: cp.url, httpStatus: cp.status, depth: cp.depth, discoveredVia: cp.discoveredVia }, issues);
+        perPageFindings.push(collectPageFindings({ violations, incomplete }));
+        const { reviewSCs: r } = collectSCSets({ violations, incomplete });
+        for (const sc of r) reviewSCs.add(sc);
         scanned += 1;
       } catch {
         skipped += 1;
       }
     }
     await markScanRunning(scanId, { axe: "4.11.4", playwright: "1.61.0", profile: "wcag21aa-en301549", skipped });
+    const analysis = buildScanAnalysis({ perPageFindings, reviewSCs });
+    const currIssues = await loadCurrentScanIssues(scanId);
+    const prevIssues = await getPreviousScanIssues(domain.id, scanId);
+    await persistScanScoring({ scanId, domainId: domain.id, analysis, prevIssues, currIssues });
     await markScanDone(scanId, scanned);
   } catch (err) {
     await markScanFailed(scanId);

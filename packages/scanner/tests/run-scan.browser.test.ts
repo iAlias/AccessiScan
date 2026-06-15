@@ -40,3 +40,23 @@ it("completes DONE and persists real page metadata", async () => {
   expect(done?.pagesScanned).toBe(done?.pages.length);
   expect(done?.pages.every((pg) => pg.discoveredVia === "BFS" || pg.discoveredVia === "SITEMAP")).toBe(true);
 }, 90_000);
+
+it("persists score, verdict, criterion results, history and diff", async () => {
+  srv = await startFixtureServer();
+  const u = await prisma.user.create({ data: { email: "o3@x.it", name: "O", passwordHash: "x", role: "ADMIN" } });
+  const p = await createProject({ name: "P3", ownerId: u.id });
+  const d = await createDomain({ projectId: p.id, baseUrl: srv.base, crawlConfig: { sameDomainDelaySecs: 0, maxPages: 10 } });
+  const scan = await prisma.scan.create({ data: { domainId: d.id, status: "QUEUED" } });
+  await runScan(scan.id);
+  const done = await prisma.scan.findUnique({ where: { id: scan.id }, include: { criterionResults: true, scoreHistory: true, diff: true, pages: true } });
+  expect(typeof done?.score).toBe("number");
+  expect(done!.score!).toBeGreaterThanOrEqual(0);
+  expect(done!.score!).toBeLessThanOrEqual(100);
+  expect(["NON_CONFORME", "PARZIALMENTE", "NON_DETERMINABILE"]).toContain(done?.verdict);
+  expect(done?.verdict).not.toBe("CONFORME");
+  expect(done?.coverageRatio).toBeCloseTo(2 / 50);
+  expect(done?.criterionResults.length).toBe(50);
+  expect(done?.scoreHistory).toBeTruthy();
+  expect(done?.diff).toBeTruthy();
+  expect(done?.pages.every((pg) => typeof pg.pageScore === "number")).toBe(true);
+}, 120_000);
