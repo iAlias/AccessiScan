@@ -15,3 +15,4 @@ export * from "./verdict.js";
 export * from "./scan-diff.js";
 export { buildScanAnalysis, type ScanAnalysis } from "./scan-analysis.js";
 export type { CrawledPage } from "./crawl.js";
+export { executeLogin, mapRecipe, type StorageState, type LoginRecipeInput, type ResolveSecret } from "./recipe-runner.js";
