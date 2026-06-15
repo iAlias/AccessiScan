@@ -76,6 +76,9 @@ importers:
         specifier: ^6.1.0
         version: 6.1.86
     devDependencies:
+      '@accessscan/scanner':
+        specifier: workspace:*
+        version: link:../scanner
       '@types/bcryptjs':
         specifier: ^2.4.6
         version: 2.4.6
