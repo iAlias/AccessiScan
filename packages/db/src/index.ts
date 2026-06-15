@@ -17,3 +17,4 @@ export {
   type EncryptedSecret,
   type EncryptedRow,
 } from "./lib/vault.js";
+export * from "./repositories/credentials.js";
