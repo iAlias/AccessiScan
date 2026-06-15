@@ -8,7 +8,7 @@
     "db:generate": "pnpm --filter @accessscan/db prisma generate",
     "db:migrate": "pnpm --filter @accessscan/db prisma migrate dev",
     "db:migrate:test": "dotenv -e .env.test -- pnpm --filter @accessscan/db prisma migrate deploy",
-    "db:seed": "pnpm --filter @accessscan/db exec tsx prisma/seed.ts",
+    "db:seed": "dotenv -e .env -- pnpm --filter @accessscan/db exec tsx prisma/seed.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
