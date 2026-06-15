@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "plugins": [{ "name": "next" }],
+    "paths": { "@/*": ["./src/*"] },
+    "composite": false
+  },
+  "include": ["src", "tests", "next-env.d.ts", ".next/types/**/*.ts"]
+}
