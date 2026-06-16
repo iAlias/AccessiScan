@@ -36,29 +36,37 @@ export function ScanButton({ domainId }: { domainId: string }) {
   function stopTimer() { if (timer.current) { clearInterval(timer.current); timer.current = null; } }
 
   async function poll(id: string) {
-    const r = await fetch(`/api/scans/${id}/status`);
-    if (!r.ok) return;
-    const s = (await r.json()) as ScanStatus;
-    setSt(s);
-    if (s.status === "DONE" || s.status === "FAILED" || s.status === "CANCELED") {
-      stopTimer();
-      if (s.status === "DONE") router.refresh();
+    try {
+      const r = await fetch(`/api/scans/${id}/status`);
+      if (!r.ok) return;
+      const s = (await r.json()) as ScanStatus;
+      setSt(s);
+      if (s.status === "DONE" || s.status === "FAILED" || s.status === "CANCELED") {
+        stopTimer();
+        if (s.status === "DONE") router.refresh();
+      }
+    } catch {
+      // transient network error (e.g. dev server restarting) — skip this tick, keep polling
     }
   }
 
   async function start() {
-    const res = await fetch(`/api/domains/${domainId}/scans`, { method: "POST" });
-    if (!res.ok) return;
-    const { scanId: id } = (await res.json()) as { scanId: string };
-    setScanId(id);
-    setSt({ id, status: "QUEUED", phase: null, pagesFound: 0, pagesScanned: 0, currentUrl: null, startedAt: null, score: null, verdict: null });
-    void poll(id);
-    timer.current = setInterval(() => void poll(id), POLL_MS);
+    try {
+      const res = await fetch(`/api/domains/${domainId}/scans`, { method: "POST" });
+      if (!res.ok) return;
+      const { scanId: id } = (await res.json()) as { scanId: string };
+      setScanId(id);
+      setSt({ id, status: "QUEUED", phase: null, pagesFound: 0, pagesScanned: 0, currentUrl: null, startedAt: null, score: null, verdict: null });
+      void poll(id);
+      timer.current = setInterval(() => void poll(id), POLL_MS);
+    } catch {
+      // ignore failed start (network error)
+    }
   }
 
   async function cancel() {
     if (!scanId) return;
-    await fetch(`/api/scans/${scanId}/cancel`, { method: "POST" });
+    try { await fetch(`/api/scans/${scanId}/cancel`, { method: "POST" }); } catch { /* ignore */ }
   }
 
   const running = st ? (st.status === "RUNNING" || st.status === "QUEUED") : false;

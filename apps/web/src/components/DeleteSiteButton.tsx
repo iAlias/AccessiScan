@@ -8,9 +8,13 @@ export function DeleteSiteButton({ domainId, name }: { domainId: string; name: s
   async function del() {
     if (!confirm(`Eliminare il sito ${name} e tutte le sue scansioni? L'operazione non è reversibile.`)) return;
     setBusy(true);
-    const res = await fetch(`/api/domains/${domainId}`, { method: "DELETE" });
-    if (res.ok) router.refresh();
-    else setBusy(false);
+    try {
+      const res = await fetch(`/api/domains/${domainId}`, { method: "DELETE" });
+      if (res.ok) router.refresh();
+      else setBusy(false);
+    } catch {
+      setBusy(false);
+    }
   }
   return (
     <button className="btn btn--ghost" type="button" onClick={() => void del()} disabled={busy} aria-label={`Elimina il sito ${name}`}>
