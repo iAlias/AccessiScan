@@ -1,0 +1,63 @@
+import { beforeEach, afterAll, expect, test } from "vitest";
+import {
+  prisma, createProject, createDomain, createScan,
+  getOverview, getDomainOverview, getScanReport,
+} from "../src/index.js";
+import { resetDb } from "./helpers/reset-db.js";
+
+beforeEach(resetDb);
+afterAll(() => prisma.$disconnect());
+
+async function seedDomain(email = "o@x.it") {
+  const u = await prisma.user.create({ data: { email, name: "O", passwordHash: "x", role: "ADMIN" } });
+  const p = await createProject({ name: "P", ownerId: u.id });
+  const d = await createDomain({ projectId: p.id, baseUrl: "https://a.it" });
+  return { projectId: p.id, domainId: d.id };
+}
+
+test("getOverview returns projects → domains → latest scan + trend", async () => {
+  const { domainId } = await seedDomain();
+  const older = await createScan(domainId);
+  await prisma.scan.update({ where: { id: older.id }, data: { status: "DONE", score: 40, verdict: "NON_CONFORME", coverageRatio: 0.04, finishedAt: new Date() } });
+  await prisma.scoreHistory.create({ data: { domainId, scanId: older.id, score: 40, verdict: "NON_CONFORME", failCount: 5, needsReviewCount: 18, passCount: 2 } });
+  const newer = await createScan(domainId);
+  await prisma.scan.update({ where: { id: newer.id }, data: { status: "DONE", score: 55, verdict: "PARZIALMENTE", coverageRatio: 0.04, finishedAt: new Date() } });
+  await prisma.scoreHistory.create({ data: { domainId, scanId: newer.id, score: 55, verdict: "PARZIALMENTE", failCount: 3, needsReviewCount: 18, passCount: 4 } });
+
+  const overview = await getOverview();
+  expect(overview).toHaveLength(1);
+  const dom = overview[0]!.domains[0]!;
+  expect(dom.latestScan?.id).toBe(newer.id);
+  expect(dom.latestScan?.score).toBe(55);
+  expect(dom.trend.map((t) => t.score)).toEqual([40, 55]);
+});
+
+test("getOverview handles a domain with no scans", async () => {
+  await seedDomain();
+  const overview = await getOverview();
+  expect(overview[0]!.domains[0]!.latestScan).toBeNull();
+  expect(overview[0]!.domains[0]!.trend).toEqual([]);
+});
+
+test("getDomainOverview returns domain + project + scan list", async () => {
+  const { domainId } = await seedDomain();
+  const s = await createScan(domainId);
+  await prisma.scan.update({ where: { id: s.id }, data: { status: "DONE", score: 70, verdict: "PARZIALMENTE" } });
+  const res = await getDomainOverview(domainId);
+  expect(res?.project.name).toBe("P");
+  expect(res?.scans).toHaveLength(1);
+  expect(res?.scans[0]!.score).toBe(70);
+});
+
+test("getScanReport includes criterionResults, diff, scoreHistory, pages.issues", async () => {
+  const { domainId } = await seedDomain();
+  const s = await createScan(domainId);
+  const report = await getScanReport(s.id);
+  expect(report?.id).toBe(s.id);
+  expect(Array.isArray(report?.criterionResults)).toBe(true);
+  expect(Array.isArray(report?.pages)).toBe(true);
+});
+
+test("getScanReport returns null for unknown id", async () => {
+  expect(await getScanReport("nope")).toBeNull();
+});
