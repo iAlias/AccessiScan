@@ -17,12 +17,15 @@ test("404 for unknown scan", async () => {
   expect((await handleGetScanStatus("nope")).status).toBe(404);
 });
 
-test("returns only light status fields", async () => {
+test("returns the light status + live-progress fields (no heavy relations)", async () => {
   const s = await seedScan();
   const res = await handleGetScanStatus(s.id);
   expect(res.status).toBe(200);
   const body = res.body as Record<string, unknown>;
-  expect(body).toEqual({ id: s.id, status: "QUEUED", score: null, verdict: null, finishedAt: null, pagesScanned: 0 });
+  expect(body).toEqual({
+    id: s.id, status: "QUEUED", score: null, verdict: null, finishedAt: null, pagesScanned: 0,
+    phase: null, pagesFound: 0, currentUrl: null, startedAt: null,
+  });
   expect(body.pages).toBeUndefined();
   expect(body.criterionResults).toBeUndefined();
 });
