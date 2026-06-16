@@ -16,6 +16,8 @@ body { margin: 0; font-family: var(--font); color: var(--text); background: var(
 a { color: var(--primary); }
 .app-header { background: var(--primary); color: var(--primary-text); padding: var(--space-3) var(--space-4); }
 .app-header a { color: var(--primary-text); }
+.app-header nav { display: flex; gap: var(--space-4); align-items: center; }
+.app-header__logo { font-weight: 700; }
 .container { max-width: 1100px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
 .project-section { margin-bottom: var(--space-6); }
 .domain-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); }
