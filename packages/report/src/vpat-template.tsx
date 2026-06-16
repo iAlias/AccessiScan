@@ -29,19 +29,19 @@ function Doc({ m }: { m: ReportModel }) {
         <h1>Report di accessibilità (VPAT 2.5 EU) — {m.domain.registrableDomain}</h1>
 
         <h2>1. Sintesi</h2>
-        <p>Punteggio: <strong>{m.score ?? "—"}</strong>/100 · Esito: <strong>{m.verdict ? VERDICT_LABEL[m.verdict] : "—"}</strong> ·
+        <p>Punteggio: <strong>{m.score ?? "—"}</strong>/100 · Esito: <strong>{m.verdict ? (VERDICT_LABEL[m.verdict] ?? m.verdict) : "—"}</strong> ·
           Copertura analizzata (criteri conclusivi): <strong>{pct(m.coverageHeadline)}</strong>
           (criteri toccati dall'analisi automatica: {pct(m.coverageTouched)}) · Pagine: {m.pagesScanned}</p>
         <p className="disclaimer">{HONESTY_DISCLAIMER}</p>
 
         <h2>2. Criteri WCAG 2.1 AA / EN 301 549</h2>
-        <table><thead><tr><th scope="col">Criterio WCAG</th><th scope="col">Clausola EN</th><th scope="col">Esito</th></tr></thead>
+        <table><caption>Esiti per criterio WCAG / EN 301 549</caption><thead><tr><th scope="col">Criterio WCAG</th><th scope="col">Clausola EN</th><th scope="col">Esito</th></tr></thead>
           <tbody>{m.criteria.map((c) => (
             <tr key={c.wcagSc}><td>{c.wcagSc}</td><td>{c.en301549Clause ?? "—"}</td><td>{STATE_LABEL[c.state] ?? c.state}</td></tr>
           ))}</tbody></table>
 
         <h2>3. Problemi rilevati</h2>
-        <table><thead><tr><th scope="col">Pagina</th><th scope="col">Regola</th><th scope="col">WCAG</th><th scope="col">Selettore</th><th scope="col">Descrizione</th></tr></thead>
+        <table><caption>Elenco dei problemi rilevati</caption><thead><tr><th scope="col">Pagina</th><th scope="col">Regola</th><th scope="col">WCAG</th><th scope="col">Selettore</th><th scope="col">Descrizione</th></tr></thead>
           <tbody>{m.issues.map((i, idx) => (
             <tr key={idx}><td>{i.pageUrl}</td><td>{i.ruleId}</td><td>{i.wcagSc ?? "—"}</td><td>{i.targetSelector}</td><td>{i.help ?? ""}</td></tr>
           ))}</tbody></table>
