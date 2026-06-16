@@ -65,14 +65,9 @@ export function getScanReport(scanId: string): Promise<ScanReport | null> {
   return prisma.scan.findUnique({ where: { id: scanId }, include: scanReportInclude });
 }
 
-const domainScanSelect = {
-  id: true, status: true, score: true, verdict: true,
-  coverageRatio: true, pagesScanned: true, finishedAt: true, createdAt: true,
-} satisfies Prisma.ScanSelect;
-
 const domainOverviewInclude = {
   project: true,
-  scans: { orderBy: { createdAt: "desc" }, select: domainScanSelect },
+  scans: { orderBy: { createdAt: "desc" }, take: 50, select: latestScanSelect },
   scoreHistory: { orderBy: { capturedAt: "desc" }, take: 10, select: trendSelect },
 } satisfies Prisma.DomainInclude;
 
