@@ -82,3 +82,30 @@ export function markScanFailed(scanId: string): Promise<Scan> {
     data: { status: "FAILED", finishedAt: new Date() },
   });
 }
+
+export interface ScanProgress { phase?: string; pagesFound?: number; pagesScanned?: number; currentUrl?: string | null }
+
+export function updateScanProgress(scanId: string, p: ScanProgress): Promise<unknown> {
+  return prisma.scan.update({
+    where: { id: scanId },
+    data: {
+      ...(p.phase !== undefined ? { phase: p.phase } : {}),
+      ...(p.pagesFound !== undefined ? { pagesFound: p.pagesFound } : {}),
+      ...(p.pagesScanned !== undefined ? { pagesScanned: p.pagesScanned } : {}),
+      ...(p.currentUrl !== undefined ? { currentUrl: p.currentUrl } : {}),
+    },
+  });
+}
+
+export function requestScanCancel(scanId: string): Promise<unknown> {
+  return prisma.scan.update({ where: { id: scanId }, data: { cancelRequested: true } });
+}
+
+export async function isScanCancelRequested(scanId: string): Promise<boolean> {
+  const s = await prisma.scan.findUnique({ where: { id: scanId }, select: { cancelRequested: true } });
+  return s?.cancelRequested ?? false;
+}
+
+export function markScanCanceled(scanId: string): Promise<unknown> {
+  return prisma.scan.update({ where: { id: scanId }, data: { status: "CANCELED", finishedAt: new Date(), phase: null, currentUrl: null } });
+}

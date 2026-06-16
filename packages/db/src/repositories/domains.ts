@@ -38,3 +38,7 @@ export function getDomain(id: string) {
     include: { loginRecipe: true, project: true },
   });
 }
+
+export function deleteDomain(domainId: string): Promise<unknown> {
+  return prisma.domain.delete({ where: { id: domainId } });
+}
