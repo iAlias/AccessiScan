@@ -1,5 +1,6 @@
 import {
   prisma, markScanRunning, persistPageWithIssues, markScanDone, markScanFailed,
+  updateScanProgress, isScanCancelRequested, markScanCanceled,
   defaultCrawlConfig, type CrawlConfig,
   persistScanScoring, loadCurrentScanIssues, getPreviousScanIssues,
   getLoginRecipe, resolveSecretsForDomain,
@@ -39,6 +40,7 @@ export async function runScan(scanId: string): Promise<void> {
   let context: Awaited<ReturnType<Browser["newContext"]>> | null = null;
   try {
     await markScanRunning(scanId, { axe: "4.11.4", playwright: "1.61.0", profile: "wcag21aa-en301549" });
+    await updateScanProgress(scanId, { phase: "crawl" });
 
     // Authenticated scan: if a login recipe exists, log in once and reuse the
     // resulting session for both the crawl and every page scan. storageState is
@@ -79,8 +81,12 @@ export async function runScan(scanId: string): Promise<void> {
 
     let scanned = 0;
     let skipped = 0;
+    const scannable = pages.filter((cp) => cp.status >= 200 && cp.status < 300).length;
+    await updateScanProgress(scanId, { phase: "scan", pagesFound: scannable, pagesScanned: 0 });
     for (const cp of pages) {
+      if (await isScanCancelRequested(scanId)) { await markScanCanceled(scanId); return; }
       if (cp.status < 200 || cp.status >= 300) { skipped += 1; continue; }
+      await updateScanProgress(scanId, { currentUrl: cp.url });
       try {
         const { violations, incomplete } = await scanUrl(cp.url, { storageState });
         const issues = violations.flatMap((rule) => rule.nodes.map((node) => toIssueRow(rule, node)));
@@ -89,6 +95,7 @@ export async function runScan(scanId: string): Promise<void> {
         const { reviewSCs: r } = collectSCSets({ violations, incomplete });
         for (const sc of r) reviewSCs.add(sc);
         scanned += 1;
+        await updateScanProgress(scanId, { pagesScanned: scanned });
       } catch {
         skipped += 1;
       }
