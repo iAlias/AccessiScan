@@ -9,17 +9,22 @@ test("verdictLabel maps enum to Italian text", () => {
   expect(verdictLabel("NON_DETERMINABILE")).toBe("Non determinabile");
   expect(verdictLabel("CONFORME")).toBe("Conforme");
   expect(verdictLabel(null)).toBe("—");
+  expect(verdictLabel(undefined)).toBe("—");
 });
 
 test("scoreLabel shows number or dash", () => {
   expect(scoreLabel(42)).toBe("42");
   expect(scoreLabel(42.6)).toBe("43");
   expect(scoreLabel(null)).toBe("—");
+  expect(scoreLabel(0)).toBe("0");
+  expect(scoreLabel(undefined)).toBe("—");
 });
 
 test("coverageLabel formats ratio as percent", () => {
   expect(coverageLabel(0.04)).toBe("4%");
   expect(coverageLabel(null)).toBe("—");
+  expect(coverageLabel(0)).toBe("0%");
+  expect(coverageLabel(undefined)).toBe("—");
 });
 
 test("criterionStateLabel maps states", () => {
