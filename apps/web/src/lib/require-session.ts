@@ -7,3 +7,9 @@ export async function requireSession() {
   if (!session?.user) throw new UnauthorizedError("Not authenticated");
   return session;
 }
+
+export async function requireAdminRole() {
+  const session = await requireSession();
+  if (session.user?.role !== "ADMIN") throw new UnauthorizedError("Admin role required");
+  return session;
+}

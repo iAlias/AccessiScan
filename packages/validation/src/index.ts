@@ -61,3 +61,9 @@ export const statementSchema = z.object({
   enforcementRoute: z.string().nullable().optional(),
 });
 export type StatementBody = z.infer<typeof statementSchema>;
+
+export const reviewDecisionSchema = z.object({
+  decision: z.enum(["PASS", "FAIL"]),
+  note: z.string().max(2000).optional(),
+});
+export type ReviewDecisionBody = z.infer<typeof reviewDecisionSchema>;
