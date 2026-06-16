@@ -17,6 +17,7 @@ enum ScanStatus {
   RUNNING
   DONE
   FAILED
+  CANCELED
 }
 
 enum ScanTrigger {
@@ -153,6 +154,10 @@ model Scan {
   startedAt        DateTime?
   finishedAt       DateTime?
   pagesScanned     Int               @default(0)
+  pagesFound       Int               @default(0)
+  phase            String?
+  currentUrl       String?
+  cancelRequested  Boolean           @default(false)
   score            Float?
   verdict          Verdict?
   coverageRatio    Float?
