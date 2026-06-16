@@ -32,6 +32,9 @@ importers:
       '@accessscan/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@accessscan/report':
+        specifier: workspace:*
+        version: link:../../packages/report
       '@accessscan/scanner':
         specifier: workspace:*
         version: link:../../packages/scanner
@@ -63,6 +66,9 @@ importers:
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
 
   packages/db:
     dependencies:
@@ -76,6 +82,9 @@ importers:
         specifier: ^6.1.0
         version: 6.1.86
     devDependencies:
+      '@accessscan/report':
+        specifier: workspace:*
+        version: link:../report
       '@accessscan/scanner':
         specifier: workspace:*
         version: link:../scanner
@@ -85,6 +94,28 @@ importers:
       prisma:
         specifier: ^6.1.0
         version: 6.19.3(typescript@5.9.3)
+
+  packages/report:
+    dependencies:
+      '@accessscan/db':
+        specifier: workspace:*
+        version: link:../db
+      '@accessscan/scanner':
+        specifier: workspace:*
+        version: link:../scanner
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
 
   packages/scanner:
     dependencies:
@@ -801,6 +832,11 @@ packages:
 
   '@types/node@20.19.43':
     resolution: {integrity: sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA==}
+
+  '@types/react-dom@19.2.3':
+    resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
+    peerDependencies:
+      '@types/react': ^19.2.0
 
   '@types/react@19.2.17':
     resolution: {integrity: sha512-MXfmqaVPEVgkBT/aY0aGCkRWWtByiYQXo3xdQ8r5RzuFrPiRn8Gar2tQdXSUQ2GKV3bkXckek89V8wQBY2Q/Aw==}
@@ -1766,6 +1802,10 @@ snapshots:
   '@types/node@20.19.43':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/react-dom@19.2.3(@types/react@19.2.17)':
+    dependencies:
+      '@types/react': 19.2.17
 
   '@types/react@19.2.17':
     dependencies:

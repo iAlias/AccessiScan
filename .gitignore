@@ -5,3 +5,4 @@ dist/
 .next/
 playwright/.auth/
 *.tsbuildinfo
+.superpowers/
