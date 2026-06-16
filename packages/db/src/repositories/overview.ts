@@ -17,7 +17,8 @@ export interface DomainOverview {
   id: string;
   baseUrl: string;
   registrableDomain: string;
-  latestScan: LatestScan | null;
+  latestScan: LatestScan | null; // latest COMPLETED scan — drives the headline score/verdict
+  pendingStatus: LatestScan["status"] | null; // status of the newest scan when it isn't DONE (RUNNING/FAILED/CANCELED)
   trend: TrendPoint[]; // ascending capturedAt
 }
 export interface ProjectOverview {
@@ -33,7 +34,7 @@ export async function getOverview(): Promise<ProjectOverview[]> {
       domains: {
         orderBy: { createdAt: "asc" },
         include: {
-          scans: { orderBy: { createdAt: "desc" }, take: 1, select: latestScanSelect },
+          scans: { orderBy: { createdAt: "desc" }, take: 10, select: latestScanSelect },
           scoreHistory: { orderBy: { capturedAt: "desc" }, take: 10, select: trendSelect },
         },
       },
@@ -42,13 +43,18 @@ export async function getOverview(): Promise<ProjectOverview[]> {
   return projects.map((p) => ({
     id: p.id,
     name: p.name,
-    domains: p.domains.map((d) => ({
-      id: d.id,
-      baseUrl: d.baseUrl,
-      registrableDomain: d.registrableDomain,
-      latestScan: d.scans[0] ?? null,
-      trend: [...d.scoreHistory].reverse(),
-    })),
+    domains: p.domains.map((d) => {
+      const newest = d.scans[0] ?? null;
+      const latestDone = d.scans.find((s) => s.status === "DONE") ?? null;
+      return {
+        id: d.id,
+        baseUrl: d.baseUrl,
+        registrableDomain: d.registrableDomain,
+        latestScan: latestDone, // headline reflects the last completed scan, never a cancelled/running one
+        pendingStatus: newest && newest.status !== "DONE" ? newest.status : null,
+        trend: [...d.scoreHistory].reverse(),
+      };
+    }),
   }));
 }
 

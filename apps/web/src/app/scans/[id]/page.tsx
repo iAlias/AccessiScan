@@ -1,51 +1,76 @@
 import { notFound } from "next/navigation";
-import { getScanReport } from "@accessscan/db";
+import Link from "next/link";
+import {
+  getReportCore, getIssuesByRule, getPageSummaries, getScanComparison,
+} from "@accessscan/db";
 import { requireSession, resolveSession } from "@/lib/require-session.js";
-import { ScoreRing } from "@/components/ScoreRing.js";
-import { VerdictPill } from "@/components/VerdictPill.js";
+import { ReportKpis } from "@/components/ReportKpis.js";
+import { IssueSummary } from "@/components/IssueSummary.js";
+import { PagesTable } from "@/components/PagesTable.js";
+import { ComparisonCard } from "@/components/ComparisonCard.js";
 import { CriterionList } from "@/components/CriterionList.js";
-import { DiffSummary } from "@/components/DiffSummary.js";
-import { IssueGroup } from "@/components/IssueGroup.js";
 import { ExportBar } from "@/components/ExportBar.js";
-import { coverageLabel, formatDate, type Verdict, type CriterionState } from "@/lib/format.js";
+import { type CriterionState } from "@/lib/format.js";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
-  const scan = await getScanReport(id);
-  if (!scan) notFound();
-  const session = await resolveSession();
-  const criteria = scan.criterionResults
+  const core = await getReportCore(id);
+  if (!core) notFound();
+
+  const [rules, pages, cmp, session] = await Promise.all([
+    getIssuesByRule(id),
+    getPageSummaries(id),
+    getScanComparison(id),
+    resolveSession(),
+  ]);
+
+  const criteria = core.criterionResults
     .map((c) => ({ wcagSc: c.wcagSc, en301549Clause: c.en301549Clause, state: c.state as CriterionState }))
     .sort((a, b) => a.wcagSc.localeCompare(b.wcagSc, undefined, { numeric: true }));
+  const failCount = criteria.filter((c) => c.state === "FAIL").length;
+  const manualCount = criteria.filter((c) => c.state === "NEEDS_MANUAL_REVIEW").length;
+  const passCount = criteria.filter((c) => c.state === "PASS").length;
+  const totalIssues = pages.reduce((sum, p) => sum + p.issueCount, 0);
+
   return (
     <div className="container">
-      <h1>Report scansione</h1>
-      <div className="report-header">
-        <ScoreRing score={scan.score} />
-        <VerdictPill verdict={scan.verdict as Verdict | null} />
-        <span className="domain-card__meta">
-          Copertura {coverageLabel(scan.coverageRatio)} · {scan.pagesScanned} pagine · {formatDate(scan.finishedAt)}
-        </span>
-      </div>
-      <ExportBar scanId={scan.id} />
+      <p className="domain-card__meta">
+        <Link href={`/domains/${core.domain.id}`}>← {core.domain.registrableDomain}</Link>
+        {" · "}Progetto {core.domain.project.name}
+      </p>
+      <h1>Report di accessibilità</h1>
+
+      <ReportKpis
+        score={core.score}
+        verdict={core.verdict}
+        pagesScanned={core.pagesScanned}
+        totalIssues={totalIssues}
+        coverageRatio={core.coverageRatio}
+        finishedAt={core.finishedAt}
+        failCount={failCount}
+        manualCount={manualCount}
+        passCount={passCount}
+      />
+
+      <ExportBar scanId={core.id} />
       {session?.user?.role === "ADMIN" && (
-        <p><a className="btn" href={`/scans/${scan.id}/review`}>Avvia revisione manuale</a></p>
+        <p><a className="btn" href={`/scans/${core.id}/review`}>Avvia revisione manuale</a></p>
       )}
 
-      <h2>Confronto</h2>
-      <DiffSummary diff={scan.diff} />
+      <h2>Problemi principali</h2>
+      <IssueSummary rules={rules} />
 
-      <h2>Criteri ({criteria.length})</h2>
+      <h2>Confronto con la scansione precedente</h2>
+      <ComparisonCard cmp={cmp} />
+
+      <h2>Pagine analizzate</h2>
+      <PagesTable scanId={core.id} pages={pages} />
+
+      <h2>Esito dei criteri ({criteria.length})</h2>
       <CriterionList rows={criteria} />
-
-      <h2>Problemi per pagina</h2>
-      {scan.pages.map((pg) => (
-        <IssueGroup key={pg.id} pageUrl={pg.url}
-          issues={pg.issues.map((i) => ({ id: i.id, ruleId: i.ruleId, targetSelector: i.targetSelector, help: i.help }))} />
-      ))}
     </div>
   );
 }

@@ -2,11 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getDomainOverview } from "@accessscan/db";
 import { requireSession } from "@/lib/require-session.js";
-import { ScoreRing } from "@/components/ScoreRing.js";
-import { VerdictPill } from "@/components/VerdictPill.js";
-import { ScanStatusBadge } from "@/components/ScanStatusBadge.js";
 import { ScanButton } from "@/components/ScanButton.js";
-import { formatDate, type Verdict, type ScanStatus } from "@/lib/format.js";
+import { ScanHistoryTable, type ScanHistoryRow } from "@/components/ScanHistoryTable.js";
 
 export const dynamic = "force-dynamic";
 
@@ -17,23 +14,15 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
   if (!domain) notFound();
   return (
     <div className="container">
+      <p className="domain-card__meta"><Link href="/">← Panoramica</Link></p>
       <h1>{domain.registrableDomain}</h1>
       <p className="domain-card__meta">Progetto: {domain.project.name}</p>
-      <ScanButton domainId={domain.id} />
-      <p><Link href={`/domains/${domain.id}/statement`}>Dichiarazione di accessibilità</Link></p>
+      <div className="card-actions">
+        <ScanButton domainId={domain.id} />
+        <Link className="btn btn--ghost" href={`/domains/${domain.id}/statement`}>Dichiarazione di accessibilità</Link>
+      </div>
       <h2>Storico scansioni</h2>
-      {domain.scans.length === 0 && <p>Nessuna scansione.</p>}
-      <ul>
-        {domain.scans.map((s) => (
-          <li key={s.id} style={{ marginBottom: "8px", display: "flex", gap: "8px", alignItems: "center" }}>
-            <ScanStatusBadge status={s.status as ScanStatus} />
-            <ScoreRing score={s.score} />
-            <VerdictPill verdict={s.verdict as Verdict | null} />
-            <span className="domain-card__meta">{formatDate(s.finishedAt ?? s.createdAt)}</span>
-            {s.status === "DONE" && <Link href={`/scans/${s.id}`}>Apri report</Link>}
-          </li>
-        ))}
-      </ul>
+      <ScanHistoryTable scans={domain.scans as ScanHistoryRow[]} />
     </div>
   );
 }
