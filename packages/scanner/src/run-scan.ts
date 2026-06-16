@@ -73,8 +73,11 @@ export async function runScan(scanId: string): Promise<void> {
       fetchText,
       seeds,
       isAllowed: cfg.respectRobotsTxt ? robots.isAllowed : undefined,
+      onPage: async (count) => { await updateScanProgress(scanId, { pagesFound: count }); },
+      shouldStop: () => isScanCancelRequested(scanId),
     });
     await page.close();
+    if (await isScanCancelRequested(scanId)) { await markScanCanceled(scanId); return; }
 
     const perPageFindings: CriterionFinding[][] = [];
     const reviewSCs = new Set<SCId>();

@@ -33,6 +33,10 @@ export interface CrawlDeps {
   seeds?: string[];
   isAllowed?: (url: string) => boolean;
   sleep?: (ms: number) => Promise<void>;
+  /** Reports the running count of scannable (2xx) pages discovered so far. */
+  onPage?: (count: number) => void | Promise<void>;
+  /** Checked before each fetch; if it resolves true the crawl stops early (cooperative cancel). */
+  shouldStop?: () => boolean | Promise<boolean>;
 }
 
 export async function crawl(startUrl: string, cfg: CrawlConfig, deps: CrawlDeps): Promise<CrawledPage[]> {
@@ -55,6 +59,7 @@ export async function crawl(startUrl: string, cfg: CrawlConfig, deps: CrawlDeps)
   }
 
   while (queue.length && out.length < cfg.maxPages) {
+    if (deps.shouldStop && (await deps.shouldStop())) break;
     const { url, depth, via } = queue.shift()!;
     if (!isAllowed(url)) continue;
     let res: FetchResult;
@@ -63,7 +68,10 @@ export async function crawl(startUrl: string, cfg: CrawlConfig, deps: CrawlDeps)
     } catch {
       continue;
     }
-    if (res.status >= 200 && res.status < 300) out.push({ url, depth, status: res.status, discoveredVia: via });
+    if (res.status >= 200 && res.status < 300) {
+      out.push({ url, depth, status: res.status, discoveredVia: via });
+      if (deps.onPage) await deps.onPage(out.length);
+    }
     if (depth >= cfg.maxDepth) {
       await sleep(cfg.sameDomainDelaySecs * 1000);
       continue;
