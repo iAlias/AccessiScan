@@ -6,6 +6,7 @@ import { VerdictPill } from "@/components/VerdictPill.js";
 import { CriterionList } from "@/components/CriterionList.js";
 import { DiffSummary } from "@/components/DiffSummary.js";
 import { IssueGroup } from "@/components/IssueGroup.js";
+import { ExportBar } from "@/components/ExportBar.js";
 import { coverageLabel, formatDate, type Verdict, type CriterionState } from "@/lib/format.js";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           Copertura {coverageLabel(scan.coverageRatio)} · {scan.pagesScanned} pagine · {formatDate(scan.finishedAt)}
         </span>
       </div>
+      <ExportBar scanId={scan.id} />
 
       <h2>Confronto</h2>
       <DiffSummary diff={scan.diff} />

@@ -20,6 +20,7 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
       <h1>{domain.registrableDomain}</h1>
       <p className="domain-card__meta">Progetto: {domain.project.name}</p>
       <ScanButton domainId={domain.id} />
+      <p><Link href={`/domains/${domain.id}/statement`}>Dichiarazione di accessibilità</Link></p>
       <h2>Storico scansioni</h2>
       {domain.scans.length === 0 && <p>Nessuna scansione.</p>}
       <ul>
