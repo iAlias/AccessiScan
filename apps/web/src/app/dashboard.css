@@ -108,3 +108,12 @@ input::placeholder { color: #8a93a8; }
   .review-layout { flex-direction: column; }
   .review-stepper { min-width: 0; width: 100%; }
 }
+
+.card-actions { display: flex; gap: var(--space-2); align-items: flex-start; flex-wrap: wrap; }
+.scan-progress { display: flex; flex-direction: column; gap: 6px; min-width: 220px; flex: 1; }
+.scan-progress__head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
+.scan-progress__phase { font-size: 13px; font-weight: 640; }
+.scan-progress__url { display: block; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.progress-bar { height: 8px; background: var(--muted-bg); border-radius: var(--radius-pill); overflow: hidden; }
+.progress-bar > i { display: block; height: 100%; background: var(--primary); border-radius: var(--radius-pill); transition: width .4s ease; }
+.status-badge--canceled { background: var(--muted-bg); color: var(--muted-text); }

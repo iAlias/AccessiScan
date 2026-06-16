@@ -1,6 +1,6 @@
 export type Verdict = "CONFORME" | "PARZIALMENTE" | "NON_CONFORME" | "NON_DETERMINABILE";
 export type CriterionState = "PASS" | "FAIL" | "NEEDS_MANUAL_REVIEW" | "NOT_APPLICABLE";
-export type ScanStatus = "QUEUED" | "RUNNING" | "DONE" | "FAILED";
+export type ScanStatus = "QUEUED" | "RUNNING" | "DONE" | "FAILED" | "CANCELED";
 
 const VERDICT: Record<Verdict, string> = {
   CONFORME: "Conforme",
@@ -30,6 +30,7 @@ export function criterionStateLabel(s: CriterionState): string { return STATE[s]
 
 const STATUS: Record<ScanStatus, string> = {
   QUEUED: "In coda", RUNNING: "In corso", DONE: "Completata", FAILED: "Fallita",
+  CANCELED: "Annullata",
 };
 export function scanStatusLabel(s: ScanStatus): string { return STATUS[s]; }
 

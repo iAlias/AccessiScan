@@ -2,6 +2,7 @@ import { getOverview } from "@accessscan/db";
 import { requireSession } from "@/lib/require-session.js";
 import { DomainCard } from "@/components/DomainCard.js";
 import { ScanButton } from "@/components/ScanButton.js";
+import { DeleteSiteButton } from "@/components/DeleteSiteButton.js";
 import { AddSiteForm } from "@/components/AddSiteForm.js";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +21,12 @@ export default async function OverviewPage() {
           {p.domains.length === 0 && <p className="domain-card__meta">Nessun dominio.</p>}
           <div className="domain-grid">
             {p.domains.map((d) => (
-              <DomainCard key={d.id} data={d} action={<ScanButton domainId={d.id} />} />
+              <DomainCard key={d.id} data={d} action={
+                <div className="card-actions">
+                  <ScanButton domainId={d.id} />
+                  <DeleteSiteButton domainId={d.id} name={d.registrableDomain} />
+                </div>
+              } />
             ))}
           </div>
         </section>
