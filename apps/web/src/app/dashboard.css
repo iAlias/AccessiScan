@@ -48,3 +48,13 @@ a { color: var(--primary); }
 .issue-group { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: var(--space-3); background: var(--bg); }
 .issue-group__toggle { width: 100%; text-align: left; background: none; border: none; padding: var(--space-3); font-weight: 600; cursor: pointer; min-height: 36px; }
 .report-header { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-6); }
+.review-layout { display: flex; gap: var(--space-4); align-items: flex-start; }
+.review-stepper { list-style: none; margin: 0; padding: 0; min-width: 220px; font-size: 13px; }
+.review-stepper li { padding: 6px 8px; border-left: 3px solid var(--border); }
+.review-step--cur { border-left-color: var(--primary); font-weight: 700; }
+.review-step--done { border-left-color: var(--ok); color: var(--ok); }
+.review-panel { flex: 1; }
+.review-criteria { list-style: none; padding: 0; }
+.review-criteria li { padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.review-banner { margin-bottom: var(--space-4); }
+.review-nav { display: flex; justify-content: space-between; margin-top: var(--space-4); }
