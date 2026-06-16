@@ -58,3 +58,7 @@ a { color: var(--primary); }
 .review-criteria li { padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .review-banner { margin-bottom: var(--space-4); }
 .review-nav { display: flex; justify-content: space-between; margin-top: var(--space-4); }
+
+.add-site { margin-bottom: var(--space-6); }
+.add-site__row { display: flex; gap: var(--space-2); margin-top: var(--space-2); max-width: 560px; }
+.add-site__row input { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }

@@ -2,6 +2,7 @@ import { getOverview } from "@accessscan/db";
 import { requireSession } from "@/lib/require-session.js";
 import { DomainCard } from "@/components/DomainCard.js";
 import { ScanButton } from "@/components/ScanButton.js";
+import { AddSiteForm } from "@/components/AddSiteForm.js";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export default async function OverviewPage() {
   return (
     <div className="container">
       <h1>Panoramica</h1>
+      <AddSiteForm />
       {projects.length === 0 && <p>Nessun progetto.</p>}
       {projects.map((p) => (
         <section key={p.id} className="project-section" aria-label={`Progetto ${p.name}`}>
