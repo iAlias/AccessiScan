@@ -68,7 +68,9 @@ export function ComparisonCard({ cmp }: { cmp: Comparison }) {
           <dd>
             <strong>{formatInt(cmp.totalIssues.current)}</strong>{" "}
             <span className="domain-card__meta">(era {formatInt(cmp.totalIssues.previous)})</span>{" "}
-            <Arrow delta={issuesDelta} betterWhen="lower" />
+            {comparable
+              ? <Arrow delta={issuesDelta} betterWhen="lower" />
+              : <span className="delta delta--flat">non confrontabile</span>}
           </dd>
         </div>
       </dl>

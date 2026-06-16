@@ -45,6 +45,20 @@ test("getOverview headlines the latest DONE scan, flags a non-DONE newest", asyn
   expect(dom.pendingStatus).toBe("CANCELED");
 });
 
+test("getOverview finds the latest DONE scan even behind 10+ newer non-DONE scans", async () => {
+  const { domainId } = await seedDomain();
+  const done = await createScan(domainId);
+  await prisma.scan.update({ where: { id: done.id }, data: { status: "DONE", score: 64, verdict: "PARZIALMENTE", finishedAt: new Date("2026-06-01T00:00:00Z"), createdAt: new Date("2026-06-01T00:00:00Z") } });
+  for (let i = 0; i < 11; i++) {
+    const c = await createScan(domainId);
+    await prisma.scan.update({ where: { id: c.id }, data: { status: "CANCELED", createdAt: new Date(`2026-06-${String(2 + i).padStart(2, "0")}T00:00:00Z`) } });
+  }
+  const dom = (await getOverview())[0]!.domains[0]!;
+  expect(dom.latestScan?.id).toBe(done.id);
+  expect(dom.latestScan?.score).toBe(64);
+  expect(dom.pendingStatus).toBe("CANCELED");
+});
+
 test("getOverview handles a domain with no scans", async () => {
   await seedDomain();
   const overview = await getOverview();

@@ -18,6 +18,7 @@ export function ScanHistoryTable({ scans }: { scans: ScanHistoryRow[] }) {
   if (scans.length === 0) return <p className="domain-card__meta">Nessuna scansione.</p>;
   return (
     <table className="history-table">
+      <caption className="visually-hidden">Storico delle scansioni del dominio</caption>
       <thead>
         <tr>
           <th scope="col">Data</th>

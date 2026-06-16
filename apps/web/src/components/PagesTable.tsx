@@ -1,7 +1,7 @@
 "use client";
 import { useId, useState } from "react";
 import { SeverityChip } from "./SeverityChip.js";
-import { formatInt, type Impact } from "@/lib/format.js";
+import { formatInt, impactRank, type Impact } from "@/lib/format.js";
 
 export interface PageRow {
   id: string;
@@ -17,10 +17,40 @@ interface PageIssue {
   help: string | null;
   helpUrl: string | null;
   targetSelector: string;
+  failureSummary: string | null;
   occurrenceCount: number;
 }
 
+interface RuleGroup {
+  ruleId: string;
+  impact: Impact | null;
+  help: string | null;
+  failureSummary: string | null;
+  occurrences: number;
+  elements: number;
+  selectors: string[];
+}
+
 const TOP_N = 25;
+const MAX_SELECTORS = 5;
+
+/** Collapse a page's raw issue rows into one entry per rule, like the report summary. */
+function groupByRule(issues: PageIssue[]): RuleGroup[] {
+  const map = new Map<string, RuleGroup>();
+  for (const i of issues) {
+    let g = map.get(i.ruleId);
+    if (!g) {
+      g = { ruleId: i.ruleId, impact: i.impact, help: i.help, failureSummary: i.failureSummary, occurrences: 0, elements: 0, selectors: [] };
+      map.set(i.ruleId, g);
+    }
+    g.occurrences += i.occurrenceCount;
+    g.elements += 1;
+    if (g.selectors.length < MAX_SELECTORS) g.selectors.push(i.targetSelector);
+  }
+  return [...map.values()].sort(
+    (a, b) => impactRank(a.impact) - impactRank(b.impact) || b.occurrences - a.occurrences || a.ruleId.localeCompare(b.ruleId),
+  );
+}
 
 function PageRowItem({ scanId, page, max }: { scanId: string; page: PageRow; max: number }) {
   const [open, setOpen] = useState(false);
@@ -48,7 +78,9 @@ function PageRowItem({ scanId, page, max }: { scanId: string; page: PageRow; max
     }
   }
 
-  const pct = max > 0 ? Math.max(2, Math.round((page.issueCount / max) * 100)) : 0;
+  const groups = issues ? groupByRule(issues) : null;
+  // A perfectly clean page must read as visually empty; only failing pages get the visibility floor.
+  const pct = page.issueCount === 0 || max === 0 ? 0 : Math.max(2, Math.round((page.issueCount / max) * 100));
   return (
     <li className="pages-table__row">
       <button
@@ -56,7 +88,7 @@ function PageRowItem({ scanId, page, max }: { scanId: string; page: PageRow; max
         className="pages-table__toggle"
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={`${page.url}, ${page.issueCount} problemi`}
+        aria-label={`${page.url}, ${formatInt(page.issueCount)} problemi`}
         onClick={toggle}
       >
         <span className="pages-table__url">{page.url}</span>
@@ -65,19 +97,36 @@ function PageRowItem({ scanId, page, max }: { scanId: string; page: PageRow; max
       </button>
       {open && (
         <div id={panelId} className="pages-table__detail">
-          {loading && <p className="domain-card__meta">Caricamento…</p>}
-          {error && <p className="domain-card__meta">Errore nel caricamento dei problemi.</p>}
-          {issues && issues.length === 0 && <p className="domain-card__meta">Nessun problema su questa pagina.</p>}
-          {issues && issues.length > 0 && (
+          <div role="status" aria-live="polite">
+            {loading && <p className="domain-card__meta">Caricamento…</p>}
+            {!loading && error && <p className="domain-card__meta" role="alert">Errore nel caricamento dei problemi.</p>}
+            {!loading && !error && groups && groups.length === 0 && (
+              <p className="domain-card__meta">Nessun problema su questa pagina.</p>
+            )}
+          </div>
+          {groups && groups.length > 0 && (
             <ul className="page-issues">
-              {issues.map((i) => (
-                <li key={i.id} className="page-issues__item">
-                  <SeverityChip impact={i.impact} />
-                  <span className="page-issues__desc">
-                    <code>{i.ruleId}</code>
-                    {i.help ? ` — ${i.help}` : ""}
-                  </span>
-                  <code className="page-issues__sel">{i.targetSelector}</code>
+              {groups.map((g) => (
+                <li key={g.ruleId} className="page-issues__item">
+                  <SeverityChip impact={g.impact} />
+                  <div className="page-issues__body">
+                    <p className="page-issues__desc">
+                      <code>{g.ruleId}</code>
+                      {g.help ? ` — ${g.help}` : ""}
+                    </p>
+                    <p className="page-issues__meta">
+                      {formatInt(g.occurrences)} occorrenze su {formatInt(g.elements)} {g.elements === 1 ? "elemento" : "elementi"}
+                    </p>
+                    {g.failureSummary && <p className="page-issues__why">{g.failureSummary}</p>}
+                    <ul className="page-issues__selectors">
+                      {g.selectors.map((s, idx) => (
+                        <li key={idx}><code title={s}>{s}</code></li>
+                      ))}
+                      {g.elements > g.selectors.length && (
+                        <li className="domain-card__meta">e altri {formatInt(g.elements - g.selectors.length)}</li>
+                      )}
+                    </ul>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -88,7 +137,7 @@ function PageRowItem({ scanId, page, max }: { scanId: string; page: PageRow; max
   );
 }
 
-/** Sortable, paginated per-page issue counts with lazy detail expansion. */
+/** Sortable, paginated per-page issue counts with lazy, rule-grouped detail. */
 export function PagesTable({ scanId, pages }: { scanId: string; pages: PageRow[] }) {
   const [showAll, setShowAll] = useState(false);
   const [sort, setSort] = useState<"count" | "url">("count");

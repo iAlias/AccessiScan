@@ -18,6 +18,10 @@ export function IssueSummary({ rules }: { rules: RuleRow[] }) {
     return <p className="domain-card__meta">Nessun problema rilevato dai controlli automatici.</p>;
   }
   return (
+    <>
+    <p className="domain-card__meta issue-summary__lead">
+      Aggregati per regola, ordinati per gravità. «Occorrenze» conta ogni elemento che fallisce.
+    </p>
     <ul className="issue-summary">
       {rules.map((r) => {
         const title = r.wcagSc ? wcagTitle(r.wcagSc) : "";
@@ -48,5 +52,6 @@ export function IssueSummary({ rules }: { rules: RuleRow[] }) {
         );
       })}
     </ul>
+    </>
   );
 }

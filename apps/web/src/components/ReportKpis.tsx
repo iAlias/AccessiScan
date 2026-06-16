@@ -14,11 +14,14 @@ export interface ReportKpiData {
   passCount: number;
 }
 
-function Kpi({ label, value, tone }: { label: string; value: string; tone?: "fail" | "warn" | "ok" }) {
+function Kpi({ label, value, tone, hint }: { label: string; value: string; tone?: "fail" | "warn" | "ok"; hint?: string }) {
   return (
     <div className="kpi">
       <dt className="kpi__label">{label}</dt>
-      <dd className={tone ? `kpi__value kpi__value--${tone}` : "kpi__value"}>{value}</dd>
+      <dd className="kpi__dd">
+        <span className={tone ? `kpi__value kpi__value--${tone}` : "kpi__value"}>{value}</span>
+        {hint && <span className="kpi__hint">{hint}</span>}
+      </dd>
     </div>
   );
 }
@@ -36,11 +39,11 @@ export function ReportKpis(d: ReportKpiData) {
       </div>
       <dl className="kpi-grid">
         <Kpi label="Pagine analizzate" value={formatInt(d.pagesScanned)} />
-        <Kpi label="Problemi rilevati" value={formatInt(d.totalIssues)} />
-        <Kpi label="Criteri falliti" value={String(d.failCount)} tone="fail" />
-        <Kpi label="Da verificare" value={String(d.manualCount)} tone="warn" />
-        <Kpi label="Criteri superati" value={String(d.passCount)} tone="ok" />
-        <Kpi label="Copertura manuale" value={coverageLabel(d.coverageRatio)} />
+        <Kpi label="Problemi rilevati" value={formatInt(d.totalIssues)} hint="finding distinti (deduplicati per pagina)" />
+        <Kpi label="Criteri falliti" value={String(d.failCount)} tone={d.failCount > 0 ? "fail" : undefined} />
+        <Kpi label="Da verificare" value={String(d.manualCount)} tone={d.manualCount > 0 ? "warn" : undefined} />
+        <Kpi label="Criteri superati" value={String(d.passCount)} tone={d.passCount > 0 ? "ok" : undefined} />
+        <Kpi label="Copertura automatica" value={coverageLabel(d.coverageRatio)} hint="criteri valutabili in automatico; il resto richiede verifica manuale" />
       </dl>
     </section>
   );
