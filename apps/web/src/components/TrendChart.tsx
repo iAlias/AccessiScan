@@ -8,7 +8,7 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
   const w = 120, hgt = 32, max = 100;
   const step = points.length > 1 ? w / (points.length - 1) : 0;
   const coords = points.map((p, i) => `${(i * step).toFixed(1)},${(hgt - (p.score / max) * hgt).toFixed(1)}`);
-  const first = points[0]!.score, last = points[points.length - 1]!.score;
+  const first = Math.round(points[0]!.score), last = Math.round(points[points.length - 1]!.score);
   const delta = last - first;
   const label = `Andamento punteggio: da ${first} a ${last} (${delta >= 0 ? "+" : ""}${delta}) su ${points.length} scansioni`;
   return (
@@ -24,7 +24,7 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
           {points.map((p, i) => (
             <tr key={i}>
               <td>{typeof p.capturedAt === "string" ? p.capturedAt : p.capturedAt.toISOString()}</td>
-              <td>{p.score}</td><td>{verdictLabel(p.verdict)}</td>
+              <td>{Math.round(p.score)}</td><td>{verdictLabel(p.verdict)}</td>
             </tr>
           ))}
         </tbody>
