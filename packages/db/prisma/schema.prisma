@@ -216,6 +216,7 @@ model CriterionResult {
   reviewerId     String?
   reviewer       User?          @relation("CriterionReviewer", fields: [reviewerId], references: [id])
   reviewedAt     DateTime?
+  reviewNote     String?
 
   @@unique([scanId, wcagSc])
 }
