@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { VerdictPill } from "./VerdictPill.js";
 import { ReviewStepper } from "./ReviewStepper.js";
 import { criterionStateLabel, type Verdict, type CriterionState } from "@/lib/format.js";
+import { wcagTitle } from "@/lib/wcag-criteria.js";
 
 export interface WizardStep { id: number; title: string; instructions: string; criteria: string[] }
 export interface WizardCriterion { wcagSc: string; state: CriterionState; source: string; reviewNote: string | null }
@@ -53,11 +54,11 @@ export function ReviewWizard({ scanId, steps, initialCriteria, initialVerdict }:
           <ul className="review-criteria">
             {step?.criteria.map((sc) => {
               const c = criteria[sc];
-              if (!c) return <li key={sc}><code>{sc}</code> — non presente in questa scansione.</li>;
+              if (!c) return <li key={sc}><code>{sc}</code> {wcagTitle(sc)} — non presente in questa scansione.</li>;
               const pending = c.state === "NEEDS_MANUAL_REVIEW";
               return (
                 <li key={sc}>
-                  <code>{sc}</code> — {criterionStateLabel(c.state)} {c.source === "MANUAL" ? "(revisionato)" : ""}
+                  <code>{sc}</code> {wcagTitle(sc)} — {criterionStateLabel(c.state)} {c.source === "MANUAL" ? "(revisionato)" : ""}
                   {pending && (
                     <span>
                       <label htmlFor={`n-${sc}`} className="visually-hidden">Nota per {sc}</label>
