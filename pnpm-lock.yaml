@@ -82,6 +82,9 @@ importers:
         specifier: ^6.1.0
         version: 6.1.86
     devDependencies:
+      '@accessscan/report':
+        specifier: workspace:*
+        version: link:../report
       '@accessscan/scanner':
         specifier: workspace:*
         version: link:../scanner

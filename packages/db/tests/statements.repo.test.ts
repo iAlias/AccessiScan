@@ -1,5 +1,6 @@
 import { beforeEach, afterAll, expect, test } from "vitest";
 import { prisma, createProject, createDomain, getStatement, upsertStatement } from "../src/index.js";
+import { createScan, draftStatementForDomain } from "../src/index.js";
 import { resetDb } from "./helpers/reset-db.js";
 
 beforeEach(resetDb);
@@ -31,4 +32,20 @@ test("upsert twice updates the same row", async () => {
   const all = await prisma.accessibilityStatement.findMany({ where: { domainId: d.id } });
   expect(all.length).toBe(1);
   expect(all[0]!.conformanceStatus).toBe("NON_CONFORME");
+});
+
+test("draftStatementForDomain proposes a conservative draft from the latest scan", async () => {
+  const d = await seedDomain();
+  const s = await createScan(d.id);
+  await prisma.scan.update({ where: { id: s.id }, data: { status: "DONE", finishedAt: new Date() } });
+  await prisma.criterionResult.create({ data: { scanId: s.id, wcagSc: "1.4.3", state: "FAIL" } });
+  const draft = await draftStatementForDomain(d.id);
+  expect(draft?.conformanceStatus).toBe("NON_CONFORME");
+  expect(draft?.method).toBe("autovalutazione automatizzata");
+  expect(draft).not.toBeNull();
+});
+
+test("draftStatementForDomain null when no DONE scan", async () => {
+  const d = await seedDomain();
+  expect(await draftStatementForDomain(d.id)).toBeNull();
 });
