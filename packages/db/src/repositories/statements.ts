@@ -1,6 +1,10 @@
 import { prisma } from "../client.js";
 import type { AccessibilityStatement, ConformanceStatus, Prisma } from "@prisma/client";
-import { draftStatement, type StatementDraft } from "@accessscan/report";
+// Deep import the PURE statement module (not the @accessscan/report barrel) so that
+// importing @accessscan/db never drags report's vpat-template.tsx (which imports
+// react-dom/server) into the Next.js server bundle. Importing the barrel here breaks
+// `next dev`/`next build` for every page that touches @accessscan/db.
+import { draftStatement, type StatementDraft } from "@accessscan/report/src/statement.js";
 
 export interface StatementFields {
   conformanceStatus: ConformanceStatus;
