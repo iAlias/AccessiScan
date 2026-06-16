@@ -63,8 +63,8 @@ export function ReviewWizard({ scanId, steps, initialCriteria, initialVerdict }:
                     <span>
                       <label htmlFor={`n-${sc}`} className="visually-hidden">Nota per {sc}</label>
                       <input id={`n-${sc}`} placeholder="Nota (opzionale)" value={notes[sc] ?? ""} onChange={(e) => setNotes({ ...notes, [sc]: e.target.value })} />
-                      <button className="btn" onClick={() => void decide(sc, "PASS")}>Pass</button>
-                      <button className="btn" onClick={() => void decide(sc, "FAIL")}>Fail</button>
+                      <button className="btn btn--ok" onClick={() => void decide(sc, "PASS")}>Pass</button>
+                      <button className="btn btn--danger" onClick={() => void decide(sc, "FAIL")}>Fail</button>
                     </span>
                   )}
                 </li>
