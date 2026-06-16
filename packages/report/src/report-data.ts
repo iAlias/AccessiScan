@@ -2,7 +2,9 @@ import { getScanReport, getDomain } from "@accessscan/db";
 import { WCAG_CATALOG, CATALOG_TOTAL } from "@accessscan/scanner";
 import type { ReportModel } from "./report-model.js";
 
-const TOUCHED = WCAG_CATALOG.filter((e) => e.automatability !== "none").length / CATALOG_TOTAL;
+function touchedCoverage(): number {
+  return WCAG_CATALOG.filter((e) => e.automatability !== "none").length / CATALOG_TOTAL;
+}
 
 function len(j: unknown): number { return Array.isArray(j) ? j.length : 0; }
 
@@ -21,7 +23,7 @@ export async function buildReportModel(scanId: string): Promise<ReportModel | nu
     score: scan.score,
     verdict: scan.verdict,
     coverageHeadline: scan.coverageRatio,
-    coverageTouched: TOUCHED,
+    coverageTouched: touchedCoverage(),
     pagesScanned: scan.pagesScanned,
     scanDate: scan.finishedAt ? scan.finishedAt.toISOString() : null,
     criteria: scan.criterionResults
