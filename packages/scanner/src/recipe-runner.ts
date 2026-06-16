@@ -14,25 +14,6 @@ function makeWaitPromise(page: Page, waitFor: WaitFor): Promise<void> {
   return page.waitForURL((u) => u.toString().includes(waitFor.value), { timeout: 30_000, waitUntil: "domcontentloaded" });
 }
 
-/**
- * Submit the form containing the given element, bypassing HTML5 browser-side
- * validation so that the server (not the browser) is authoritative on creds.
- */
-async function submitFormOf(page: Page, selector: string): Promise<void> {
-  await page.evaluate((sel) => {
-    const el = document.querySelector(sel) as HTMLElement | null;
-    if (!el) throw new Error(`selector not found: ${sel}`);
-    const form = el.closest("form") as HTMLFormElement | null;
-    if (form) {
-      form.noValidate = true;
-      const btn = el instanceof HTMLButtonElement || el instanceof HTMLInputElement ? el : null;
-      if (btn) { form.requestSubmit(btn); } else { form.submit(); }
-    } else {
-      el.click();
-    }
-  }, selector);
-}
-
 export async function executeLogin(
   browser: Browser,
   recipe: LoginRecipeInput,
@@ -62,7 +43,7 @@ export async function executeLogin(
         waitForTriggered = true;
         await Promise.all([
           makeWaitPromise(page, recipe.waitFor),
-          submitFormOf(page, step.selector),
+          page.click(step.selector, { timeout: 15_000 }),
         ]);
       } else {
         await page.click(step.selector, { timeout: 15_000 });

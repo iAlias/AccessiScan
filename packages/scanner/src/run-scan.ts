@@ -2,8 +2,11 @@ import {
   prisma, markScanRunning, persistPageWithIssues, markScanDone, markScanFailed,
   defaultCrawlConfig, type CrawlConfig,
   persistScanScoring, loadCurrentScanIssues, getPreviousScanIssues,
+  getLoginRecipe, resolveSecretsForDomain,
 } from "@accessscan/db";
-import { getBrowser, scanUrl } from "./scanner.js";
+import type { Browser } from "playwright";
+import { getBrowser, scanUrl, type StorageState } from "./scanner.js";
+import { executeLogin, mapRecipe } from "./recipe-runner.js";
 import { crawl } from "./crawl.js";
 import { makeFetchPage } from "./playwright-adapter.js";
 import { loadRobots } from "./robots.js";
@@ -33,9 +36,26 @@ export async function runScan(scanId: string): Promise<void> {
   const origin = new URL(domain.baseUrl).origin;
 
   const browser = await getBrowser();
-  const context = await browser.newContext();
+  let context: Awaited<ReturnType<Browser["newContext"]>> | null = null;
   try {
     await markScanRunning(scanId, { axe: "4.11.4", playwright: "1.61.0", profile: "wcag21aa-en301549" });
+
+    // Authenticated scan: if a login recipe exists, log in once and reuse the
+    // resulting session for both the crawl and every page scan. storageState is
+    // held in memory only and never persisted. Secrets are resolved at use and
+    // never logged. Auth failure fails the whole scan (auth was requested).
+    let storageState: StorageState | undefined;
+    const recipe = await getLoginRecipe(domain.id);
+    if (recipe) {
+      const secrets = await resolveSecretsForDomain(domain.id);
+      storageState = await executeLogin(browser, mapRecipe(recipe), (ref) => {
+        const v = secrets.get(ref);
+        if (v === undefined) throw new Error(`No credential for valueRef: ${ref}`);
+        return Promise.resolve(v);
+      });
+    }
+    const authState = storageState ? "AUTHED" : "ANON";
+    context = await browser.newContext(storageState ? { storageState } : {});
 
     const robots = await loadRobots(origin, UA, fetchText);
     const sitemapSources = robots.sitemaps.length
@@ -62,9 +82,9 @@ export async function runScan(scanId: string): Promise<void> {
     for (const cp of pages) {
       if (cp.status < 200 || cp.status >= 300) { skipped += 1; continue; }
       try {
-        const { violations, incomplete } = await scanUrl(cp.url);
+        const { violations, incomplete } = await scanUrl(cp.url, { storageState });
         const issues = violations.flatMap((rule) => rule.nodes.map((node) => toIssueRow(rule, node)));
-        await persistPageWithIssues(scanId, { url: cp.url, httpStatus: cp.status, depth: cp.depth, discoveredVia: cp.discoveredVia }, issues);
+        await persistPageWithIssues(scanId, { url: cp.url, httpStatus: cp.status, depth: cp.depth, discoveredVia: cp.discoveredVia, authState }, issues);
         perPageFindings.push(collectPageFindings({ violations, incomplete }));
         const { reviewSCs: r } = collectSCSets({ violations, incomplete });
         for (const sc of r) reviewSCs.add(sc);
@@ -83,6 +103,6 @@ export async function runScan(scanId: string): Promise<void> {
     await markScanFailed(scanId);
     throw err;
   } finally {
-    await context.close();
+    if (context) await context.close();
   }
 }

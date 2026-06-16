@@ -27,5 +27,8 @@ it("logs in and captures the session cookie in storageState", async () => {
 
 it("throws a redacted error when login fails (wrong success selector)", async () => {
   const bad = { ...recipe(srv.url), successCheck: { type: "selector" as const, value: "#nope" } };
-  await expect(executeLogin(browser, bad, async () => "x")).rejects.toThrow(/successCheck/);
+  // Valid creds so the form submits and navigates; only successCheck fails (#nope absent).
+  await expect(
+    executeLogin(browser, bad, async (ref) => (ref === "email" ? "u@x.it" : "pw")),
+  ).rejects.toThrow(/successCheck/);
 }, 60_000);

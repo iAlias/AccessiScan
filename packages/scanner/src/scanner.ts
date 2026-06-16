@@ -1,6 +1,8 @@
-import { chromium, type Browser, type Page } from "playwright";
+import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { AxeBuilder } from "@axe-core/playwright";
 import type { Result as AxeResult } from "axe-core";
+
+export type StorageState = Awaited<ReturnType<BrowserContext["storageState"]>>;
 
 let browserPromise: Promise<Browser> | null = null;
 
@@ -23,9 +25,16 @@ export interface ScanResult {
   incomplete: AxeResult[];
 }
 
-export async function scanUrl(url: string): Promise<ScanResult> {
+export interface ScanUrlOptions {
+  /** Authenticated session to reuse (cookies + localStorage) for AUTHED scans. */
+  storageState?: StorageState;
+}
+
+export async function scanUrl(url: string, options?: ScanUrlOptions): Promise<ScanResult> {
   const browser = await getBrowser();
-  const context = await browser.newContext();
+  const context = await browser.newContext(
+    options?.storageState ? { storageState: options.storageState } : {},
+  );
   try {
     const page: Page = await context.newPage();
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
