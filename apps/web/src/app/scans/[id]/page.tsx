@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { getScanReport } from "@accessscan/db";
-import { requireSession } from "@/lib/require-session.js";
-import { auth } from "@/lib/auth.js";
+import { requireSession, resolveSession } from "@/lib/require-session.js";
 import { ScoreRing } from "@/components/ScoreRing.js";
 import { VerdictPill } from "@/components/VerdictPill.js";
 import { CriterionList } from "@/components/CriterionList.js";
@@ -17,7 +16,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const scan = await getScanReport(id);
   if (!scan) notFound();
-  const session = await auth();
+  const session = await resolveSession();
   const criteria = scan.criterionResults
     .map((c) => ({ wcagSc: c.wcagSc, en301549Clause: c.en301549Clause, state: c.state as CriterionState }))
     .sort((a, b) => a.wcagSc.localeCompare(b.wcagSc, undefined, { numeric: true }));
