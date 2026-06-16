@@ -2,7 +2,7 @@ import type { ReportModel } from "./report-model.js";
 
 function cell(v: string | null): string {
   const s = v ?? "";
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 const HEADER = ["pageUrl", "ruleId", "wcagSc", "en301549Clause", "impact", "targetSelector", "help"];
