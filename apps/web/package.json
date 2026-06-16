@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@accessscan/db": "workspace:*",
+    "@accessscan/report": "workspace:*",
     "@accessscan/scanner": "workspace:*",
     "@accessscan/validation": "workspace:*",
     "bcryptjs": "^2.4.3",

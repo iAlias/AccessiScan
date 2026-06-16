@@ -32,6 +32,9 @@ importers:
       '@accessscan/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@accessscan/report':
+        specifier: workspace:*
+        version: link:../../packages/report
       '@accessscan/scanner':
         specifier: workspace:*
         version: link:../../packages/scanner
@@ -88,6 +91,28 @@ importers:
       prisma:
         specifier: ^6.1.0
         version: 6.19.3(typescript@5.9.3)
+
+  packages/report:
+    dependencies:
+      '@accessscan/db':
+        specifier: workspace:*
+        version: link:../db
+      '@accessscan/scanner':
+        specifier: workspace:*
+        version: link:../scanner
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
 
   packages/scanner:
     dependencies:
