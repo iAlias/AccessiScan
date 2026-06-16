@@ -25,6 +25,16 @@
 8. Run an axe or Lighthouse pass on each page in the browser → expect no WCAG AA violations
    (the dashboard dogfoods its own scanner).
 
+## Revisione manuale (sblocca CONFORME)
+1. Login come utente ADMIN (role=ADMIN).
+2. Apri un report scan DONE → "Avvia revisione manuale" → /scans/[id]/review.
+3. Per ogni step (8 procedure §4.4 + Criteri residui) marca i criteri pendenti Pass/Fail con nota.
+4. Quando 0 pendenti e 0 fail → il banner mostra "Conforme sbloccato".
+5. Un Fail su un criterio → NON_CONFORME. Ricarica → stato persistito (source MANUAL, nota).
+
+Verdetto: CONFORME è raggiungibile SOLO da questo wizard (sign-off umano di tutti i criteri),
+mai da uno scan automatico. Ogni decisione è tracciata (reviewerId, reviewedAt, source MANUAL, nota).
+
 ## Notes
 - Automated scans never emit a "Conforme" verdict (hard product invariant); expect
   NON_CONFORME / PARZIALMENTE / NON_DETERMINABILE.
