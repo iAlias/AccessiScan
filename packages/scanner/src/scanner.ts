@@ -1,6 +1,7 @@
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { AxeBuilder } from "@axe-core/playwright";
 import type { Result as AxeResult } from "axe-core";
+import { safeGoto } from "./nav-guard.js";
 
 export type StorageState = Awaited<ReturnType<BrowserContext["storageState"]>>;
 
@@ -37,7 +38,7 @@ export async function scanUrl(url: string, options?: ScanUrlOptions): Promise<Sc
   );
   try {
     const page: Page = await context.newPage();
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await safeGoto(page, url, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.locator("main, [role=\"main\"], body").first().waitFor({ state: "visible", timeout: 15_000 });
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "EN-301-549"])

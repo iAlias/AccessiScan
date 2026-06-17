@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 
 config({ path: ".env.test" });
 
+// Allow scanning local 127.0.0.1 test servers through the navigation SSRF guard.
+process.env.ACCESSSCAN_ALLOW_LOOPBACK ??= "1";
+
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({

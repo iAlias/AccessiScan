@@ -12,7 +12,7 @@ import { crawl } from "./crawl.js";
 import { makeFetchPage } from "./playwright-adapter.js";
 import { loadRobots } from "./robots.js";
 import { fetchSitemapUrls } from "./sitemap.js";
-import { assertPublicUrl, safeFetchText } from "./url-guard.js";
+import { assertNavigableUrl, safeFetchText } from "./url-guard.js";
 import { toIssueRow } from "./mapper.js";
 import { collectPageFindings, collectSCSets } from "./sc-mapping.js";
 import { buildScanAnalysis } from "./scan-analysis.js";
@@ -40,7 +40,7 @@ export async function runScan(scanId: string): Promise<void> {
     await updateScanProgress(scanId, { phase: "crawl" });
 
     // SSRF guard: never crawl a private/internal/metadata target.
-    await assertPublicUrl(domain.baseUrl);
+    await assertNavigableUrl(domain.baseUrl);
 
     // Authenticated scan: if a login recipe exists, log in once and reuse the
     // resulting session for both the crawl and every page scan. storageState is
@@ -52,7 +52,7 @@ export async function runScan(scanId: string): Promise<void> {
       const mapped = mapRecipe(recipe);
       // Credentials may only be submitted to a public URL on the SAME registrable
       // domain as the scan target — never an attacker-chosen or internal origin.
-      await assertPublicUrl(mapped.loginUrl);
+      await assertNavigableUrl(mapped.loginUrl);
       if (registrableDomain(mapped.loginUrl) !== registrableDomain(domain.baseUrl)) {
         throw new Error("Login URL must be on the same registrable domain as the scan target");
       }

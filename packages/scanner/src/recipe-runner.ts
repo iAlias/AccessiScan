@@ -1,4 +1,5 @@
 import type { Browser, BrowserContext, Page } from "playwright";
+import { safeGoto } from "./nav-guard.js";
 
 export type StorageState = Awaited<ReturnType<BrowserContext["storageState"]>>;
 
@@ -22,7 +23,7 @@ export async function executeLogin(
   const context = await browser.newContext();
   try {
     const page: Page = await context.newPage();
-    await page.goto(recipe.loginUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await safeGoto(page, recipe.loginUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
     const steps = recipe.steps;
     // Find the last click step index (triggers navigation)

@@ -60,6 +60,16 @@ export async function isPublicUrl(raw: string): Promise<boolean> {
 }
 
 /**
+ * SSRF guard for actual page navigation / fetching. Same as assertPublicUrl, but
+ * honors ACCESSSCAN_ALLOW_LOOPBACK=1 so test suites can scan local 127.0.0.1
+ * servers. The escape hatch is OFF by default and must never be set in production.
+ */
+export async function assertNavigableUrl(raw: string): Promise<void> {
+  if (process.env.ACCESSSCAN_ALLOW_LOOPBACK === "1") return;
+  await assertPublicUrl(raw);
+}
+
+/**
  * A fetchText that refuses unsafe URLs, follows redirects only to public targets,
  * and times out. Returns the body text or null (never throws).
  */

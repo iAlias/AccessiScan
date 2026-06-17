@@ -1,5 +1,5 @@
 import type { Browser } from "playwright";
-import { assertPublicUrl } from "@accessscan/scanner";
+import { assertNavigableUrl } from "@accessscan/scanner";
 import type { PageContext, StorageStateLike } from "./types.js";
 
 export interface AxeFinding { ruleId: string; impact: string | null; help: string | null; targetSelector: string }
@@ -12,7 +12,7 @@ export async function capturePageContext(
   url: string,
   axeFindings: AxeFinding[],
   storageState?: StorageStateLike,
-  validateUrl: (u: string) => Promise<unknown> = assertPublicUrl,
+  validateUrl: (u: string) => Promise<unknown> = assertNavigableUrl,
 ): Promise<PageContext> {
   // SSRF guard: re-validate the URL at navigation time (the original scan's check
   // ran earlier against the base URL only — DNS could have rebound since).
@@ -21,6 +21,7 @@ export async function capturePageContext(
   try {
     const page = await context.newPage();
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    if (page.url() && page.url() !== url) await validateUrl(page.url()); // reject redirect to a private host
     // page.accessibility was removed in Playwright 1.5x; ariaSnapshot() is the modern equivalent.
     const a11yTree = (await page.locator("body").ariaSnapshot().catch(() => "")) || "(empty)";
     const main = await page.$("main");
