@@ -1,7 +1,7 @@
 import {
   prisma, markScanRunning, persistPageWithIssues, markScanDone, markScanFailed,
   updateScanProgress, isScanCancelRequested, markScanCanceled,
-  defaultCrawlConfig, type CrawlConfig,
+  defaultCrawlConfig, type CrawlConfig, registrableDomain,
   persistScanScoring, loadCurrentScanIssues, getPreviousScanIssues,
   getLoginRecipe, resolveSecretsForDomain,
 } from "@accessscan/db";
@@ -12,6 +12,7 @@ import { crawl } from "./crawl.js";
 import { makeFetchPage } from "./playwright-adapter.js";
 import { loadRobots } from "./robots.js";
 import { fetchSitemapUrls } from "./sitemap.js";
+import { assertPublicUrl, safeFetchText } from "./url-guard.js";
 import { toIssueRow } from "./mapper.js";
 import { collectPageFindings, collectSCSets } from "./sc-mapping.js";
 import { buildScanAnalysis } from "./scan-analysis.js";
@@ -20,14 +21,10 @@ import type { SCId } from "./wcag-catalog.js";
 
 const UA = "AccessScanBot";
 
-async function fetchText(url: string): Promise<string | null> {
-  try {
-    const r = await fetch(url);
-    return r.ok ? await r.text() : null;
-  } catch {
-    return null;
-  }
-}
+// SSRF-guarded fetcher used for robots.txt and sitemaps (refuses private/internal
+// hosts and times out). Per-page content is fetched through Playwright, scoped to
+// the target's registrable domain by the crawler.
+const fetchText = safeFetchText({ ua: UA });
 
 export async function runScan(scanId: string): Promise<void> {
   const scan = await prisma.scan.findUnique({ where: { id: scanId }, include: { domain: true } });
@@ -42,6 +39,9 @@ export async function runScan(scanId: string): Promise<void> {
     await markScanRunning(scanId, { axe: "4.11.4", playwright: "1.61.0", profile: "wcag21aa-en301549" });
     await updateScanProgress(scanId, { phase: "crawl" });
 
+    // SSRF guard: never crawl a private/internal/metadata target.
+    await assertPublicUrl(domain.baseUrl);
+
     // Authenticated scan: if a login recipe exists, log in once and reuse the
     // resulting session for both the crawl and every page scan. storageState is
     // held in memory only and never persisted. Secrets are resolved at use and
@@ -49,8 +49,15 @@ export async function runScan(scanId: string): Promise<void> {
     let storageState: StorageState | undefined;
     const recipe = await getLoginRecipe(domain.id);
     if (recipe) {
+      const mapped = mapRecipe(recipe);
+      // Credentials may only be submitted to a public URL on the SAME registrable
+      // domain as the scan target — never an attacker-chosen or internal origin.
+      await assertPublicUrl(mapped.loginUrl);
+      if (registrableDomain(mapped.loginUrl) !== registrableDomain(domain.baseUrl)) {
+        throw new Error("Login URL must be on the same registrable domain as the scan target");
+      }
       const secrets = await resolveSecretsForDomain(domain.id);
-      storageState = await executeLogin(browser, mapRecipe(recipe), (ref) => {
+      storageState = await executeLogin(browser, mapped, (ref) => {
         const v = secrets.get(ref);
         if (v === undefined) throw new Error(`No credential for valueRef: ${ref}`);
         return Promise.resolve(v);
@@ -63,9 +70,10 @@ export async function runScan(scanId: string): Promise<void> {
     const sitemapSources = robots.sitemaps.length
       ? robots.sitemaps
       : [new URL("/sitemap.xml", origin).toString()];
+    const scopeDomain = (() => { try { return registrableDomain(domain.baseUrl); } catch { return undefined; } })();
     const seen = new Set<string>();
     const seeds: string[] = [];
-    for (const sm of sitemapSources) seeds.push(...(await fetchSitemapUrls(sm, fetchText, seen)));
+    for (const sm of sitemapSources) seeds.push(...(await fetchSitemapUrls(sm, fetchText, seen, 0, scopeDomain)));
 
     const page = await context.newPage();
     const pages = await crawl(domain.baseUrl, cfg, {
