@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ScanStatusBadge } from "./ScanStatusBadge.js";
 import { VerdictPill } from "./VerdictPill.js";
-import { scoreLabel, coverageLabel, formatDate, formatInt, type Verdict, type ScanStatus } from "@/lib/format.js";
+import { scoreLabel, formatDate, formatInt, type Verdict, type ScanStatus } from "@/lib/format.js";
 
 export interface ScanHistoryRow {
   id: string;
@@ -25,7 +25,6 @@ export function ScanHistoryTable({ scans }: { scans: ScanHistoryRow[] }) {
           <th scope="col">Stato</th>
           <th scope="col">Punteggio</th>
           <th scope="col">Esito</th>
-          <th scope="col">Copertura</th>
           <th scope="col">Pagine</th>
           <th scope="col">Report</th>
         </tr>
@@ -37,7 +36,6 @@ export function ScanHistoryTable({ scans }: { scans: ScanHistoryRow[] }) {
             <td><ScanStatusBadge status={s.status} /></td>
             <td>{scoreLabel(s.score)}</td>
             <td><VerdictPill verdict={s.verdict} /></td>
-            <td>{coverageLabel(s.coverageRatio)}</td>
             <td>{formatInt(s.pagesScanned)}</td>
             <td>{s.status === "DONE" ? <Link href={`/scans/${s.id}`}>Apri</Link> : "—"}</td>
           </tr>

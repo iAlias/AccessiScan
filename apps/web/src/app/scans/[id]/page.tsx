@@ -48,7 +48,6 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         verdict={core.verdict}
         pagesScanned={core.pagesScanned}
         totalIssues={totalIssues}
-        coverageRatio={core.coverageRatio}
         finishedAt={core.finishedAt}
         failCount={failCount}
         manualCount={manualCount}

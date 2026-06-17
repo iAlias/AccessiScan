@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ScoreRing } from "./ScoreRing.js";
 import { VerdictPill } from "./VerdictPill.js";
 import { TrendChart, type TrendPoint } from "./TrendChart.js";
-import { coverageLabel, formatDate, scanStatusLabel, type Verdict, type ScanStatus } from "@/lib/format.js";
+import { formatDate, scanStatusLabel, type Verdict, type ScanStatus } from "@/lib/format.js";
 
 export interface DomainCardData {
   id: string;
@@ -27,7 +27,7 @@ export function DomainCard({ data, action }: { data: DomainCardData; action: Rea
       <TrendChart points={data.trend} />
       <p className="domain-card__meta">
         {s
-          ? <>Ultima scansione: {formatDate(s.finishedAt)} · copertura {coverageLabel(s.coverageRatio)}</>
+          ? <>Ultima scansione: {formatDate(s.finishedAt)}</>
           : <>Nessuna scansione completata</>}
       </p>
       {flagged && (

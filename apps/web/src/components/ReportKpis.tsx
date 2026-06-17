@@ -1,13 +1,12 @@
 import { ScoreRing } from "./ScoreRing.js";
 import { VerdictPill } from "./VerdictPill.js";
-import { coverageLabel, formatDate, formatInt, type Verdict } from "@/lib/format.js";
+import { formatDate, formatInt, type Verdict } from "@/lib/format.js";
 
 export interface ReportKpiData {
   score: number | null;
   verdict: Verdict | null;
   pagesScanned: number;
   totalIssues: number;
-  coverageRatio: number | null;
   finishedAt: Date | string | null;
   failCount: number;
   manualCount: number;
@@ -40,10 +39,9 @@ export function ReportKpis(d: ReportKpiData) {
       <dl className="kpi-grid">
         <Kpi label="Pagine analizzate" value={formatInt(d.pagesScanned)} />
         <Kpi label="Problemi rilevati" value={formatInt(d.totalIssues)} hint="finding distinti (deduplicati per pagina)" />
-        <Kpi label="Criteri falliti" value={String(d.failCount)} tone={d.failCount > 0 ? "fail" : undefined} />
-        <Kpi label="Da verificare" value={String(d.manualCount)} tone={d.manualCount > 0 ? "warn" : undefined} />
+        <Kpi label="Criteri falliti" value={String(d.failCount)} tone={d.failCount > 0 ? "fail" : undefined} hint="bocciati dai controlli automatici" />
+        <Kpi label="Da verificare a mano" value={String(d.manualCount)} tone={d.manualCount > 0 ? "warn" : undefined} hint="l'automazione non può decidere: serve test manuale" />
         <Kpi label="Criteri superati" value={String(d.passCount)} tone={d.passCount > 0 ? "ok" : undefined} />
-        <Kpi label="Copertura automatica" value={coverageLabel(d.coverageRatio)} hint="criteri valutabili in automatico; il resto richiede verifica manuale" />
       </dl>
     </section>
   );
