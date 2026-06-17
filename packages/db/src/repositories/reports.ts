@@ -1,12 +1,13 @@
 import { prisma } from "../client.js";
 import type { Report, ReportType } from "@prisma/client";
 
-export async function recordReport(scanId: string, type: ReportType, verapdfPassed: boolean | null, storageUrl: string): Promise<Report> {
-  const existing = await prisma.report.findFirst({ where: { scanId, type } });
-  if (existing) {
-    return prisma.report.update({ where: { id: existing.id }, data: { verapdfPassed, storageUrl, generatedAt: new Date() } });
-  }
-  return prisma.report.create({ data: { scanId, type, verapdfPassed, storageUrl } });
+export function recordReport(scanId: string, type: ReportType, verapdfPassed: boolean | null, storageUrl: string): Promise<Report> {
+  // Atomic on the (scanId, type) unique constraint — no find-then-create race / duplicates.
+  return prisma.report.upsert({
+    where: { scanId_type: { scanId, type } },
+    update: { verapdfPassed, storageUrl, generatedAt: new Date() },
+    create: { scanId, type, verapdfPassed, storageUrl },
+  });
 }
 
 export function listReports(scanId: string): Promise<Report[]> {

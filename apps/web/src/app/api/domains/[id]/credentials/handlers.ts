@@ -11,6 +11,9 @@ export async function handleCreateCredential(domainId: string, input: unknown): 
   if (!domain) return { status: 404, body: { error: "domain not found" } };
   const parsed = createCredentialSchema.safeParse(input);
   if (!parsed.success) return { status: 400, body: { error: parsed.error.flatten() } };
+  // Labels must be unique per domain, otherwise secret resolution by label is ambiguous.
+  const existing = await prisma.credential.findFirst({ where: { domainId, label: parsed.data.label }, select: { id: true } });
+  if (existing) return { status: 409, body: { error: "a credential with this label already exists for the domain" } };
   const meta = await createCredential({ domainId, label: parsed.data.label, secret: parsed.data.secret });
   return { status: 201, body: meta };
 }

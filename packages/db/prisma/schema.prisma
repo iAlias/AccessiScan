@@ -142,6 +142,8 @@ model Credential {
   wrappedDek String
   keyId      String
   createdAt  DateTime @default(now())
+
+  @@unique([domainId, label])
 }
 
 model Scan {
@@ -273,4 +275,6 @@ model Report {
   storageUrl    String
   verapdfPassed Boolean?
   generatedAt   DateTime   @default(now())
+
+  @@unique([scanId, type])
 }
