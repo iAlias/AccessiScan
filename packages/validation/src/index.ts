@@ -53,12 +53,12 @@ export type CreateCredentialBody = z.infer<typeof createCredentialSchema>;
 export const statementSchema = z.object({
   conformanceStatus: z.enum(["PARZIALMENTE", "NON_CONFORME"]),
   nonAccessibleContent: z.object({
-    inosservanzaL4_2004: z.array(z.string()),
-    onereSproporzionato: z.array(z.string()),
-    fuoriAmbito: z.array(z.string()),
+    inosservanzaL4_2004: z.array(z.string().max(2000)).max(200),
+    onereSproporzionato: z.array(z.string().max(2000)).max(200),
+    fuoriAmbito: z.array(z.string().max(2000)).max(200),
   }),
-  feedbackContact: z.string().min(1).nullable().optional(),
-  enforcementRoute: z.string().nullable().optional(),
+  feedbackContact: z.string().min(1).max(500).nullable().optional(),
+  enforcementRoute: z.string().max(1000).nullable().optional(),
 });
 export type StatementBody = z.infer<typeof statementSchema>;
 

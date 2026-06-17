@@ -21,7 +21,7 @@ export async function evaluateCluster(
   for (const v of verdicts) {
     if (v.verdict === "FAIL" && opts.verifyFails) {
       try {
-        const [refutation] = await runBatch(provider, buildVerifyPrompt(ctx, v));
+        const refutation = (await runBatch(provider, buildVerifyPrompt(ctx, v))).find((r) => r.wcagSc === v.wcagSc);
         if (refutation && refutation.verdict !== "FAIL") {
           result.push({ ...v, verdict: "UNSURE", reasoning: `FAIL non confermato in verifica: ${refutation.reasoning}`, url: ctx.url });
           continue;

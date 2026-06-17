@@ -29,6 +29,7 @@ export function ScanButton({ domainId }: { domainId: string }) {
   const router = useRouter();
   const [scanId, setScanId] = useState<string | null>(null);
   const [st, setSt] = useState<ScanStatus | null>(null);
+  const [busy, setBusy] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
@@ -53,16 +54,21 @@ export function ScanButton({ domainId }: { domainId: string }) {
   }
 
   async function start() {
+    if (busy || timer.current) return; // guard against double-submit (duplicate scans + leaked interval)
+    setBusy(true);
     try {
       const res = await fetch(`/api/domains/${domainId}/scans`, { method: "POST" });
       if (!res.ok) return;
       const { scanId: id } = (await res.json()) as { scanId: string };
       setScanId(id);
       setSt({ id, status: "QUEUED", phase: null, pagesFound: 0, pagesScanned: 0, currentUrl: null, startedAt: null, score: null, verdict: null });
+      stopTimer(); // never leak a previous interval
       void poll(id);
       timer.current = setInterval(() => void poll(id), POLL_MS);
     } catch {
       // ignore failed start (network error)
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -98,7 +104,7 @@ export function ScanButton({ domainId }: { domainId: string }) {
 
   return (
     <div>
-      <button className="btn" type="button" onClick={() => void start()}>Avvia scansione</button>
+      <button className="btn" type="button" onClick={() => void start()} disabled={busy}>{busy ? "Avvio…" : "Avvia scansione"}</button>
       <span role="status" aria-live="polite" className="domain-card__meta">
         {st?.status === "FAILED" ? " Scansione fallita." : st?.status === "CANCELED" ? " Scansione annullata." : ""}
       </span>

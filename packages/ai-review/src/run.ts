@@ -32,22 +32,36 @@ export async function runAiReview(scanId: string, deps: AiReviewDeps): Promise<v
   deps.setStatus({ phase: "evaluate", clustersDone: 0, clustersTotal: clusters.length });
   const contexts: PageContext[] = [];
   const all: ClusterVerdict[] = [];
+  let evalAttempts = 0;
+  let evalErrors = 0;
   for (let i = 0; i < clusters.length; i++) {
     if (await deps.shouldCancel()) return;
     let ctx: PageContext;
     try { ctx = await deps.capture(clusters[i]!.representative); }
     catch { deps.setStatus({ phase: "evaluate", clustersDone: i + 1, clustersTotal: clusters.length }); continue; }
     contexts.push(ctx);
-    const verdicts = await evaluateCluster(deps.provider, ctx, pageScs, { verifyFails: true });
-    all.push(...verdicts);
+    if (pageScs.length > 0) {
+      evalAttempts++;
+      // A provider error on one cluster must not abort the whole pass.
+      try { all.push(...(await evaluateCluster(deps.provider, ctx, pageScs, { verifyFails: true }))); }
+      catch { evalErrors++; }
+    }
     deps.setStatus({ phase: "evaluate", clustersDone: i + 1, clustersTotal: clusters.length });
   }
+
+  // Every page capture failed → surface as a failure, not a silent empty DONE.
+  if (clusters.length > 0 && contexts.length === 0) throw new Error("AI review: all page captures failed");
 
   if (await deps.shouldCancel()) return;
   if (siteScs.length > 0 && contexts.length > 0) {
     deps.setStatus({ phase: "site", clustersDone: clusters.length, clustersTotal: clusters.length });
-    all.push(...(await evaluateSite(deps.provider, contexts, siteScs)));
+    evalAttempts++;
+    try { all.push(...(await evaluateSite(deps.provider, contexts, siteScs))); }
+    catch { evalErrors++; }
   }
+
+  // The provider errored on every batch → fail rather than persist nothing.
+  if (evalAttempts > 0 && evalErrors === evalAttempts) throw new Error("AI review: provider failed on all batches");
 
   const suggestions = aggregateSuggestions(all, deps.confidenceThreshold);
   await deps.persist(scanId, suggestions);

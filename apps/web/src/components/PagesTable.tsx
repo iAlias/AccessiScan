@@ -87,7 +87,7 @@ function PageRowItem({ scanId, page, max }: { scanId: string; page: PageRow; max
         type="button"
         className="pages-table__toggle"
         aria-expanded={open}
-        aria-controls={panelId}
+        aria-controls={open ? panelId : undefined}
         aria-label={`${page.url}, ${formatInt(page.issueCount)} problemi`}
         onClick={toggle}
       >

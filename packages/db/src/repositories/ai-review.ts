@@ -30,6 +30,14 @@ export async function persistAiSuggestions(scanId: string, suggestions: AiSugges
   );
 }
 
+/** Wipe all AI suggestions for a scan (called before a re-run so stale ones don't linger). */
+export function clearAiSuggestions(scanId: string): Promise<unknown> {
+  return prisma.criterionResult.updateMany({
+    where: { scanId },
+    data: { aiState: null, aiReasoning: null, aiConfidence: null, aiEvidence: null, aiReviewedAt: null },
+  });
+}
+
 export function getAiSuggestions(scanId: string) {
   return prisma.criterionResult.findMany({
     where: { scanId, aiState: { not: null } },

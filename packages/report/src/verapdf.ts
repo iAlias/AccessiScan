@@ -17,7 +17,7 @@ export async function validatePdf(buf: Buffer): Promise<boolean | null> {
     const { stdout } = await run(bin, ["--flavour", "ua1", tmp], { maxBuffer: 10 * 1024 * 1024 });
     return /compliant="true"|"isCompliant":\s*true/i.test(stdout);
   } catch {
-    return false;
+    return null; // validator failed to run → unknown, not "non-compliant"
   } finally {
     await rm(tmp, { force: true });
   }

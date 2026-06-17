@@ -1,4 +1,4 @@
-import { prisma, createProject, createDomain, createScan } from "@accessscan/db";
+import { prisma, createProject, createDomain, createScan, markScanFailed } from "@accessscan/db";
 import { createDomainSchema } from "@accessscan/validation";
 import type { HandlerResult } from "../projects/handlers.js";
 
@@ -11,8 +11,8 @@ export async function handleAddSite(url: string, ownerId: string, runScan: RunSc
   if (!project) project = await createProject({ name: "I miei siti", ownerId });
   const domain = await createDomain({ projectId: project.id, baseUrl: parsed.data.baseUrl });
   const scan = await createScan(domain.id);
-  void Promise.resolve(runScan(scan.id)).catch(() => {
-    void prisma.scan.update({ where: { id: scan.id }, data: { status: "FAILED" } }).catch(() => {});
-  });
+  // markScanFailed only transitions a still-in-flight scan, so a late rejection
+  // can't clobber a DONE/CANCELED scan.
+  void Promise.resolve(runScan(scan.id)).catch(() => { void markScanFailed(scan.id).catch(() => {}); });
   return { status: 202, body: { domainId: domain.id, scanId: scan.id } };
 }
