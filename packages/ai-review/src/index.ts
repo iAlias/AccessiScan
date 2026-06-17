@@ -9,3 +9,4 @@ export * from "./prompt.js";
 export * from "./evaluate.js";
 export * from "./capture.js";
 export * from "./run.js";
+export * from "./run-for-scan.js";
