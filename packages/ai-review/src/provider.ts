@@ -1,4 +1,6 @@
 import type { ZodSchema } from "zod";
+import { anthropicProvider } from "./provider-anthropic.js";
+import { openAiCompatibleProvider } from "./provider-openai.js";
 
 export interface LlmRequest {
   system: string;
@@ -39,4 +41,10 @@ export function readProviderConfig(env: NodeJS.ProcessEnv): ProviderConfig {
     baseUrl: env.AI_BASE_URL,
     apiKey: env.AI_API_KEY,
   };
+}
+
+export function createProviderFromEnv(env: NodeJS.ProcessEnv = process.env): LlmProvider {
+  const cfg = readProviderConfig(env);
+  if (cfg.provider === "anthropic") return anthropicProvider({ model: cfg.model, baseUrl: cfg.baseUrl, apiKey: cfg.apiKey });
+  return openAiCompatibleProvider({ model: cfg.model, baseUrl: cfg.baseUrl, apiKey: cfg.apiKey });
 }
