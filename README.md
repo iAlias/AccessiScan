@@ -3,11 +3,8 @@
 > A standalone web accessibility auditing platform. Point it at a domain, let it crawl and scan every page, and get a detailed accessibility report with a compliance score, WCAG 2.1 AA / EN 301 549 verdict, and full scan history over time.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-
 [![Node ≥ 20](https://img.shields.io/badge/Node-%3E%3D20-green.svg)](https://nodejs.org)
-
 [![pnpm](https://img.shields.io/badge/pnpm-9-orange.svg)](https://pnpm.io)
-
 [![Next.js 15](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
 
 ---
@@ -177,6 +174,7 @@ apps/web/src/
 │   └── projects/           # Project & scan UI pages
 ├── lib/                    # Server-side helpers, auth config
 └── types/                  # Shared TypeScript types
+
 packages/scanner/src/
 ├── crawl.ts                # BFS crawler
 ├── sitemap.ts              # Sitemap.xml parser
@@ -190,6 +188,7 @@ packages/scanner/src/
 ├── scan-analysis.ts        # Criterion-level aggregation
 ├── wcag-catalog.ts         # WCAG 2.1 A/AA criterion catalog
 └── sc-mapping.ts           # axe rule → WCAG SC mapping
+
 packages/db/
 └── prisma/
     ├── schema.prisma       # Full data model
