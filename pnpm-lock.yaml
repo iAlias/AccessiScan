@@ -29,6 +29,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@accessscan/ai-review':
+        specifier: workspace:*
+        version: link:../../packages/ai-review
       '@accessscan/db':
         specifier: workspace:*
         version: link:../../packages/db
