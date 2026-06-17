@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getDomainOverview } from "@accessscan/db";
-import { requireSession } from "@/lib/require-session.js";
+import { requirePageSession } from "@/lib/require-session.js";
 import { ScanButton } from "@/components/ScanButton.js";
 import { ScanHistoryTable, type ScanHistoryRow } from "@/components/ScanHistoryTable.js";
 
 export const dynamic = "force-dynamic";
 
 export default async function DomainPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await requireSession();
+  const session = await requirePageSession();
   const { id } = await params;
   const domain = await getDomainOverview(id);
   if (!domain || domain.project.ownerId !== session.user!.id) notFound();

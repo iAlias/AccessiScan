@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
   getReportCore, getIssuesByRule, getPageSummaries, getScanComparison, scanOwnerId,
 } from "@accessscan/db";
-import { requireSession } from "@/lib/require-session.js";
+import { requirePageSession } from "@/lib/require-session.js";
 import { ReportKpis } from "@/components/ReportKpis.js";
 import { IssueSummary } from "@/components/IssueSummary.js";
 import { PagesTable } from "@/components/PagesTable.js";
@@ -15,7 +15,7 @@ import { type CriterionState } from "@/lib/format.js";
 export const dynamic = "force-dynamic";
 
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await requireSession();
+  const session = await requirePageSession();
   const { id } = await params;
   if ((await scanOwnerId(id)) !== session.user!.id) notFound();
   const core = await getReportCore(id);

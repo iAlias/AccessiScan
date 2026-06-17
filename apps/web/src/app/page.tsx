@@ -1,5 +1,5 @@
 import { getOverview } from "@accessscan/db";
-import { requireSession } from "@/lib/require-session.js";
+import { requirePageSession } from "@/lib/require-session.js";
 import { DomainCard } from "@/components/DomainCard.js";
 import { ScanButton } from "@/components/ScanButton.js";
 import { DeleteSiteButton } from "@/components/DeleteSiteButton.js";
@@ -8,7 +8,7 @@ import { AddSiteForm } from "@/components/AddSiteForm.js";
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage() {
-  const session = await requireSession();
+  const session = await requirePageSession();
   const projects = await getOverview(session.user!.id);
   return (
     <div className="container">

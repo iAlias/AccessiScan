@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import { getReviewState, scanOwnerId } from "@accessscan/db";
 import { buildReviewSteps } from "@accessscan/scanner";
-import { requireAdminRole } from "@/lib/require-session.js";
+import { requireAdminPage } from "@/lib/require-session.js";
 import { ReviewWizard, type WizardCriterion } from "@/components/ReviewWizard.js";
 import type { Verdict, CriterionState } from "@/lib/format.js";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReviewPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await requireAdminRole();
+  const session = await requireAdminPage();
   const { id } = await params;
   if ((await scanOwnerId(id)) !== session.user!.id) notFound();
   const state = await getReviewState(id);

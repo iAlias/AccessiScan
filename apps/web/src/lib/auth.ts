@@ -3,8 +3,14 @@ import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@accessscan/db";
 import { verifyPassword } from "./password.js";
 
+// A valid bcrypt hash compared against when the email is unknown, so a missing
+// user and a wrong password take the same time (no user-enumeration oracle).
+const DUMMY_HASH = "$2a$12$07DhkVF11xqhfQWpaKnTzuXhvV6ENzoPzwZSs1oHbofueMbLyxQUe";
+
 const _auth: NextAuthResult = NextAuth({
-  session: { strategy: "jwt" },
+  // Short session lifetime so a revoked/role-changed account loses access within
+  // hours rather than the 30-day default.
+  session: { strategy: "jwt", maxAge: 60 * 60 * 8 },
   providers: [
     Credentials({
       credentials: { email: {}, password: {} },
@@ -13,8 +19,8 @@ const _auth: NextAuthResult = NextAuth({
         const password = creds?.password as string | undefined;
         if (!email || !password) return null;
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) return null;
-        if (!(await verifyPassword(password, user.passwordHash))) return null;
+        const ok = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
+        if (!user || !ok) return null;
         return { id: user.id, email: user.email, name: user.name, role: user.role };
       },
     }),

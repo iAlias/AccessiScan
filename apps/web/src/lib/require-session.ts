@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { auth } from "./auth.js";
 import { prisma } from "@accessscan/db";
 import type { Session } from "next-auth";
@@ -30,5 +31,18 @@ export async function requireSession() {
 export async function requireAdminRole() {
   const session = await requireSession();
   if (session.user?.role !== "ADMIN") throw new UnauthorizedError("Admin role required");
+  return session;
+}
+
+/** For server components: redirect to /login instead of throwing (which would 500). */
+export async function requirePageSession(): Promise<Session> {
+  const session = await resolveSession();
+  if (!session?.user) redirect("/login");
+  return session;
+}
+
+export async function requireAdminPage(): Promise<Session> {
+  const session = await requirePageSession();
+  if (session.user?.role !== "ADMIN") redirect("/");
   return session;
 }
