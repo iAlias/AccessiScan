@@ -70,6 +70,22 @@ importers:
         specifier: ^19.0.0
         version: 19.2.3(@types/react@19.2.17)
 
+  packages/ai-review:
+    dependencies:
+      '@accessscan/db':
+        specifier: workspace:*
+        version: link:../db
+      '@accessscan/scanner':
+        specifier: workspace:*
+        version: link:../scanner
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
+    devDependencies:
+      playwright:
+        specifier: ^1.61.0
+        version: 1.61.0
+
   packages/db:
     dependencies:
       '@prisma/client':
