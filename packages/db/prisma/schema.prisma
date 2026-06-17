@@ -20,6 +20,14 @@ enum ScanStatus {
   CANCELED
 }
 
+enum AiReviewStatus {
+  IDLE
+  RUNNING
+  DONE
+  FAILED
+  CANCELED
+}
+
 enum ScanTrigger {
   MANUAL
   SCHEDULED
@@ -160,6 +168,9 @@ model Scan {
   phase            String?
   currentUrl       String?
   cancelRequested  Boolean           @default(false)
+  aiReviewStatus          AiReviewStatus @default(IDLE)
+  aiReviewError           String?
+  aiReviewCancelRequested Boolean        @default(false)
   score            Float?
   verdict          Verdict?
   coverageRatio    Float?
@@ -224,6 +235,11 @@ model CriterionResult {
   reviewer       User?          @relation("CriterionReviewer", fields: [reviewerId], references: [id])
   reviewedAt     DateTime?
   reviewNote     String?
+  aiState        CriterionState?
+  aiReasoning    String?
+  aiConfidence   Float?
+  aiEvidence     String?
+  aiReviewedAt   DateTime?
 
   @@unique([scanId, wcagSc])
 }

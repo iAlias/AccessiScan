@@ -7,7 +7,10 @@ import { criterionStateLabel, type Verdict, type CriterionState } from "@/lib/fo
 import { wcagTitle } from "@/lib/wcag-criteria.js";
 
 export interface WizardStep { id: number; title: string; instructions: string; criteria: string[] }
-export interface WizardCriterion { wcagSc: string; state: CriterionState; source: string; reviewNote: string | null }
+export interface WizardCriterion {
+  wcagSc: string; state: CriterionState; source: string; reviewNote: string | null;
+  aiState?: CriterionState | null; aiReasoning?: string | null; aiConfidence?: number | null; aiEvidence?: string | null;
+}
 
 export function ReviewWizard({ scanId, steps, initialCriteria, initialVerdict }: {
   scanId: string; steps: WizardStep[]; initialCriteria: WizardCriterion[]; initialVerdict: Verdict | null;
@@ -19,6 +22,7 @@ export function ReviewWizard({ scanId, steps, initialCriteria, initialVerdict }:
   const [verdict, setVerdict] = useState<Verdict | null>(initialVerdict);
   const [current, setCurrent] = useState(steps[0]?.id ?? 1);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
 
   const stepInfos = useMemo(() => steps.map((s) => ({
     id: s.id, title: s.title,
@@ -28,15 +32,20 @@ export function ReviewWizard({ scanId, steps, initialCriteria, initialVerdict }:
   const step = steps.find((s) => s.id === current) ?? steps[0];
 
   async function decide(wcagSc: string, decision: "PASS" | "FAIL") {
-    const res = await fetch(`/api/scans/${scanId}/criteria/${wcagSc}/review`, {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ decision, note: notes[wcagSc] || undefined }),
-    });
-    if (!res.ok) return;
-    const { verdict: v } = (await res.json()) as { verdict: Verdict };
-    setVerdict(v);
-    setCriteria((prev) => ({ ...prev, [wcagSc]: { ...prev[wcagSc]!, state: decision as CriterionState, source: "MANUAL", reviewNote: notes[wcagSc] ?? null } }));
-    router.refresh();
+    setError(null);
+    try {
+      const res = await fetch(`/api/scans/${scanId}/criteria/${wcagSc}/review`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ decision, note: notes[wcagSc] || undefined }),
+      });
+      if (!res.ok) { setError(`Impossibile salvare la decisione su ${wcagSc}. Riprova.`); return; }
+      const { verdict: v } = (await res.json()) as { verdict: Verdict };
+      setVerdict(v);
+      setCriteria((prev) => ({ ...prev, [wcagSc]: { ...prev[wcagSc]!, state: decision as CriterionState, source: "MANUAL", reviewNote: notes[wcagSc] ?? null } }));
+      router.refresh();
+    } catch {
+      setError(`Errore di rete sul criterio ${wcagSc}. Riprova.`);
+    }
   }
 
   return (
@@ -45,6 +54,7 @@ export function ReviewWizard({ scanId, steps, initialCriteria, initialVerdict }:
         Verdetto corrente: <VerdictPill verdict={verdict} />
         {verdict === "CONFORME" && <strong> — Conforme sbloccato.</strong>}
       </div>
+      {error && <p role="alert" className="domain-card__flag">{error}</p>}
       <div className="review-layout">
         <ReviewStepper steps={stepInfos} current={current} />
         <section className="review-panel" aria-label={`Step ${step?.id}`}>
@@ -59,10 +69,21 @@ export function ReviewWizard({ scanId, steps, initialCriteria, initialVerdict }:
               return (
                 <li key={sc}>
                   <code>{sc}</code> {wcagTitle(sc)} — {criterionStateLabel(c.state)} {c.source === "MANUAL" ? "(revisionato)" : ""}
+                  {pending && c.aiState && (
+                    <span className="ai-suggestion">
+                      <strong>AI:</strong> {criterionStateLabel(c.aiState)}
+                      {typeof c.aiConfidence === "number" ? ` (${Math.round(c.aiConfidence * 100)}%)` : ""}
+                      {c.aiReasoning ? ` — ${c.aiReasoning}` : ""}
+                      {c.aiEvidence ? <> · <code>{c.aiEvidence}</code></> : null}
+                    </span>
+                  )}
                   {pending && (
                     <span>
                       <label htmlFor={`n-${sc}`} className="visually-hidden">Nota per {sc}</label>
                       <input id={`n-${sc}`} placeholder="Nota (opzionale)" value={notes[sc] ?? ""} onChange={(e) => setNotes({ ...notes, [sc]: e.target.value })} />
+                      {(c.aiState === "PASS" || c.aiState === "FAIL") && (
+                        <button className="btn btn--ghost" onClick={() => void decide(sc, c.aiState as "PASS" | "FAIL")}>Conferma AI</button>
+                      )}
                       <button className="btn btn--ok" onClick={() => void decide(sc, "PASS")}>Pass</button>
                       <button className="btn btn--danger" onClick={() => void decide(sc, "FAIL")}>Fail</button>
                     </span>

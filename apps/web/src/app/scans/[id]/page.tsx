@@ -10,6 +10,7 @@ import { PagesTable } from "@/components/PagesTable.js";
 import { ComparisonCard } from "@/components/ComparisonCard.js";
 import { CriterionList } from "@/components/CriterionList.js";
 import { ExportBar } from "@/components/ExportBar.js";
+import { AiReviewButton } from "@/components/AiReviewButton.js";
 import { type CriterionState } from "@/lib/format.js";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +59,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       {session.user?.role === "ADMIN" && (
         <p><a className="btn" href={`/scans/${core.id}/review`}>Avvia revisione manuale</a></p>
       )}
+      {session.user?.role === "ADMIN" && <AiReviewButton scanId={core.id} />}
 
       <h2>Problemi principali</h2>
       <IssueSummary rules={rules} />

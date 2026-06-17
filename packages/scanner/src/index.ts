@@ -1,6 +1,7 @@
 export { canonicalizeUrl } from "./canonical-url.js";
 export { crawl, type FetchResult, type CrawlDeps } from "./crawl.js";
 export { fetchSitemapUrls } from "./sitemap.js";
+export { assertPublicUrl, isPublicUrl, isPrivateIp, UnsafeUrlError, safeFetchText } from "./url-guard.js";
 export { loadRobots, type RobotsInfo } from "./robots.js";
 export * from "./mapper.js";
 export { issueFingerprint, normalizeHtml } from "./fingerprint.js";
