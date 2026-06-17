@@ -12,7 +12,7 @@ interface Rubric {
 
 const RUBRICS: Record<string, Rubric> = {
   "1.2.1": { scope: "page", rubric: "Audio-only/video-only content has a text alternative (audio) or text/audio alternative (video)." },
-  "1.2.2": { scope: "page", rubric: "Every video with speech has synchronized captions (<track kind=captions>)." },
+  "1.2.3": { scope: "page", rubric: "Prerecorded video has audio description OR a full text transcript." },
   "1.2.4": { scope: "page", rubric: "Live audio/video has real-time captions." },
   "1.2.5": { scope: "page", rubric: "Prerecorded video has an audio-description track." },
   "1.3.2": { scope: "page", rubric: "DOM reading order matches the logical/visual order; no CSS-reordered content that breaks meaning." },
