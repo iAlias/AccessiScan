@@ -27,8 +27,9 @@ export interface ProjectOverview {
   domains: DomainOverview[];
 }
 
-export async function getOverview(): Promise<ProjectOverview[]> {
+export async function getOverview(ownerId: string): Promise<ProjectOverview[]> {
   const projects = await prisma.project.findMany({
+    where: { ownerId },
     orderBy: { createdAt: "desc" },
     include: {
       domains: {

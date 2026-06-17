@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
-  getReportCore, getIssuesByRule, getPageSummaries, getScanComparison,
+  getReportCore, getIssuesByRule, getPageSummaries, getScanComparison, scanOwnerId,
 } from "@accessscan/db";
-import { requireSession, resolveSession } from "@/lib/require-session.js";
+import { requireSession } from "@/lib/require-session.js";
 import { ReportKpis } from "@/components/ReportKpis.js";
 import { IssueSummary } from "@/components/IssueSummary.js";
 import { PagesTable } from "@/components/PagesTable.js";
@@ -15,16 +15,16 @@ import { type CriterionState } from "@/lib/format.js";
 export const dynamic = "force-dynamic";
 
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireSession();
+  const session = await requireSession();
   const { id } = await params;
+  if ((await scanOwnerId(id)) !== session.user!.id) notFound();
   const core = await getReportCore(id);
   if (!core) notFound();
 
-  const [rules, pages, cmp, session] = await Promise.all([
+  const [rules, pages, cmp] = await Promise.all([
     getIssuesByRule(id),
     getPageSummaries(id),
     getScanComparison(id),
-    resolveSession(),
   ]);
 
   const criteria = core.criterionResults
@@ -56,7 +56,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       />
 
       <ExportBar scanId={core.id} />
-      {session?.user?.role === "ADMIN" && (
+      {session.user?.role === "ADMIN" && (
         <p><a className="btn" href={`/scans/${core.id}/review`}>Avvia revisione manuale</a></p>
       )}
 

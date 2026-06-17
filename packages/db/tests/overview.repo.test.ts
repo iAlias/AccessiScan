@@ -12,11 +12,11 @@ async function seedDomain(email = "o@x.it") {
   const u = await prisma.user.create({ data: { email, name: "O", passwordHash: "x", role: "ADMIN" } });
   const p = await createProject({ name: "P", ownerId: u.id });
   const d = await createDomain({ projectId: p.id, baseUrl: "https://a.it" });
-  return { projectId: p.id, domainId: d.id };
+  return { projectId: p.id, domainId: d.id, userId: u.id };
 }
 
 test("getOverview returns projects → domains → latest scan + trend", async () => {
-  const { domainId } = await seedDomain();
+  const { domainId, userId } = await seedDomain();
   const older = await createScan(domainId);
   await prisma.scan.update({ where: { id: older.id }, data: { status: "DONE", score: 40, verdict: "NON_CONFORME", coverageRatio: 0.04, finishedAt: new Date() } });
   await prisma.scoreHistory.create({ data: { domainId, scanId: older.id, score: 40, verdict: "NON_CONFORME", failCount: 5, needsReviewCount: 18, passCount: 2 } });
@@ -24,7 +24,7 @@ test("getOverview returns projects → domains → latest scan + trend", async (
   await prisma.scan.update({ where: { id: newer.id }, data: { status: "DONE", score: 55, verdict: "PARZIALMENTE", coverageRatio: 0.04, finishedAt: new Date() } });
   await prisma.scoreHistory.create({ data: { domainId, scanId: newer.id, score: 55, verdict: "PARZIALMENTE", failCount: 3, needsReviewCount: 18, passCount: 4 } });
 
-  const overview = await getOverview();
+  const overview = await getOverview(userId);
   expect(overview).toHaveLength(1);
   const dom = overview[0]!.domains[0]!;
   expect(dom.latestScan?.id).toBe(newer.id);
@@ -33,35 +33,35 @@ test("getOverview returns projects → domains → latest scan + trend", async (
 });
 
 test("getOverview headlines the latest DONE scan, flags a non-DONE newest", async () => {
-  const { domainId } = await seedDomain();
+  const { domainId, userId } = await seedDomain();
   const done = await createScan(domainId);
   await prisma.scan.update({ where: { id: done.id }, data: { status: "DONE", score: 79, verdict: "NON_CONFORME", coverageRatio: 0.04, finishedAt: new Date("2026-06-01T00:00:00Z"), createdAt: new Date("2026-06-01T00:00:00Z") } });
   const canceled = await createScan(domainId);
   await prisma.scan.update({ where: { id: canceled.id }, data: { status: "CANCELED", createdAt: new Date("2026-06-02T00:00:00Z") } });
 
-  const dom = (await getOverview())[0]!.domains[0]!;
+  const dom = (await getOverview(userId))[0]!.domains[0]!;
   expect(dom.latestScan?.id).toBe(done.id); // headline = last completed, not the cancelled one
   expect(dom.latestScan?.score).toBe(79);
   expect(dom.pendingStatus).toBe("CANCELED");
 });
 
 test("getOverview finds the latest DONE scan even behind 10+ newer non-DONE scans", async () => {
-  const { domainId } = await seedDomain();
+  const { domainId, userId } = await seedDomain();
   const done = await createScan(domainId);
   await prisma.scan.update({ where: { id: done.id }, data: { status: "DONE", score: 64, verdict: "PARZIALMENTE", finishedAt: new Date("2026-06-01T00:00:00Z"), createdAt: new Date("2026-06-01T00:00:00Z") } });
   for (let i = 0; i < 11; i++) {
     const c = await createScan(domainId);
     await prisma.scan.update({ where: { id: c.id }, data: { status: "CANCELED", createdAt: new Date(`2026-06-${String(2 + i).padStart(2, "0")}T00:00:00Z`) } });
   }
-  const dom = (await getOverview())[0]!.domains[0]!;
+  const dom = (await getOverview(userId))[0]!.domains[0]!;
   expect(dom.latestScan?.id).toBe(done.id);
   expect(dom.latestScan?.score).toBe(64);
   expect(dom.pendingStatus).toBe("CANCELED");
 });
 
 test("getOverview handles a domain with no scans", async () => {
-  await seedDomain();
-  const overview = await getOverview();
+  const { userId } = await seedDomain();
+  const overview = await getOverview(userId);
   expect(overview[0]!.domains[0]!.latestScan).toBeNull();
   expect(overview[0]!.domains[0]!.trend).toEqual([]);
 });

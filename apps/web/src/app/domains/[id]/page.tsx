@@ -8,10 +8,10 @@ import { ScanHistoryTable, type ScanHistoryRow } from "@/components/ScanHistoryT
 export const dynamic = "force-dynamic";
 
 export default async function DomainPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireSession();
+  const session = await requireSession();
   const { id } = await params;
   const domain = await getDomainOverview(id);
-  if (!domain) notFound();
+  if (!domain || domain.project.ownerId !== session.user!.id) notFound();
   return (
     <div className="container">
       <p className="domain-card__meta"><Link href="/">← Panoramica</Link></p>

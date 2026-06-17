@@ -16,6 +16,6 @@ export async function handleCreateProject(
   return { status: 201, body: project };
 }
 
-export async function handleListProjects(): Promise<HandlerResult<unknown>> {
-  return { status: 200, body: await listProjects() };
+export async function handleListProjects(ownerId: string): Promise<HandlerResult<unknown>> {
+  return { status: 200, body: await listProjects(ownerId) };
 }

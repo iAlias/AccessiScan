@@ -8,8 +8,8 @@ import { AddSiteForm } from "@/components/AddSiteForm.js";
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage() {
-  await requireSession();
-  const projects = await getOverview();
+  const session = await requireSession();
+  const projects = await getOverview(session.user!.id);
   return (
     <div className="container">
       <h1>Panoramica</h1>

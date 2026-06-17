@@ -1,15 +1,15 @@
 import { notFound } from "next/navigation";
-import { getDomain, getStatement, draftStatementForDomain } from "@accessscan/db";
+import { getDomain, getStatement, draftStatementForDomain, domainOwnerId } from "@accessscan/db";
 import { requireSession } from "@/lib/require-session.js";
 import { StatementForm, type StatementValues } from "@/components/StatementForm.js";
 
 export const dynamic = "force-dynamic";
 
 export default async function StatementPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireSession();
+  const session = await requireSession();
   const { id } = await params;
   const domain = await getDomain(id);
-  if (!domain) notFound();
+  if (!domain || (await domainOwnerId(id)) !== session.user!.id) notFound();
   const saved = await getStatement(id);
   const draft = saved ? null : await draftStatementForDomain(id);
 
