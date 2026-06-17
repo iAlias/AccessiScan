@@ -6,3 +6,4 @@ export * from "./provider.js";
 export * from "./provider-openai.js";
 export * from "./provider-anthropic.js";
 export * from "./prompt.js";
+export * from "./evaluate.js";
