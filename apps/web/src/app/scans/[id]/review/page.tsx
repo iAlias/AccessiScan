@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getReviewState, scanOwnerId } from "@accessscan/db";
+import { getReviewState, scanOwnerId, getAiSuggestions } from "@accessscan/db";
 import { buildReviewSteps } from "@accessscan/scanner";
 import { requireAdminPage } from "@/lib/require-session.js";
 import { ReviewWizard, type WizardCriterion } from "@/components/ReviewWizard.js";
@@ -15,7 +15,16 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   if (!state) notFound();
   const pending = state.criteria.filter((c) => c.state === "NEEDS_MANUAL_REVIEW").map((c) => c.wcagSc);
   const steps = buildReviewSteps(pending).map((s) => ({ id: s.id, title: s.title, instructions: s.instructions, criteria: s.criteria }));
-  const criteria: WizardCriterion[] = state.criteria.map((c) => ({ wcagSc: c.wcagSc, state: c.state as CriterionState, source: c.source, reviewNote: c.reviewNote }));
+  const ai = await getAiSuggestions(id);
+  const aiByCriterion = new Map(ai.map((a) => [a.wcagSc, a]));
+  const criteria: WizardCriterion[] = state.criteria.map((c) => {
+    const a = aiByCriterion.get(c.wcagSc);
+    return {
+      wcagSc: c.wcagSc, state: c.state as CriterionState, source: c.source, reviewNote: c.reviewNote,
+      aiState: (a?.aiState ?? null) as CriterionState | null, aiReasoning: a?.aiReasoning ?? null,
+      aiConfidence: a?.aiConfidence ?? null, aiEvidence: a?.aiEvidence ?? null,
+    };
+  });
   return (
     <div className="container">
       <h1>Revisione manuale</h1>
