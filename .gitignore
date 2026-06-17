@@ -7,3 +7,4 @@ dist/
 playwright/.auth/
 *.tsbuildinfo
 .superpowers/
+.claude/
