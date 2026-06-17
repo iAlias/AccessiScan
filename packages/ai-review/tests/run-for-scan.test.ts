@@ -17,7 +17,7 @@ test("runAiReviewForScan persists an AI suggestion for a pending criterion", asy
 
   await runAiReviewForScan(s.id, {
     provider: fakeProvider({ verdicts: [{ wcagSc: "2.4.6", verdict: "PASS", confidence: 0.9, reasoning: "ok" }] }),
-    capture: async (url) => ({ url, a11yTree: "T", domExcerpt: "D", axeFindings: [] }),
+    capture: async (rep) => ({ url: rep.url, a11yTree: "T", domExcerpt: "D", axeFindings: [] }),
   });
 
   const row = await prisma.criterionResult.findFirstOrThrow({ where: { scanId: s.id, wcagSc: "2.4.6" } });

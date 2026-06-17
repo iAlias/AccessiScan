@@ -1,4 +1,5 @@
 import type { Browser } from "playwright";
+import { assertPublicUrl } from "@accessscan/scanner";
 import type { PageContext, StorageStateLike } from "./types.js";
 
 export interface AxeFinding { ruleId: string; impact: string | null; help: string | null; targetSelector: string }
@@ -11,7 +12,11 @@ export async function capturePageContext(
   url: string,
   axeFindings: AxeFinding[],
   storageState?: StorageStateLike,
+  validateUrl: (u: string) => Promise<unknown> = assertPublicUrl,
 ): Promise<PageContext> {
+  // SSRF guard: re-validate the URL at navigation time (the original scan's check
+  // ran earlier against the base URL only — DNS could have rebound since).
+  await validateUrl(url);
   const context = await browser.newContext(storageState ? { storageState } : {});
   try {
     const page = await context.newPage();

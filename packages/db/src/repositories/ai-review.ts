@@ -42,6 +42,11 @@ export async function pendingManualCriteria(scanId: string): Promise<string[]> {
   return rows.map((r) => r.wcagSc);
 }
 
+export async function getPageAxeFindings(pageId: string): Promise<Array<{ ruleId: string; impact: string | null; help: string | null; targetSelector: string }>> {
+  const issues = await prisma.issue.findMany({ where: { pageId }, select: { ruleId: true, impact: true, help: true, targetSelector: true } });
+  return issues.map((i) => ({ ruleId: i.ruleId, impact: i.impact, help: i.help, targetSelector: i.targetSelector }));
+}
+
 export async function loadScanPageRefs(scanId: string): Promise<Array<{ id: string; url: string; ruleIds: string[] }>> {
   const pages = await prisma.page.findMany({
     where: { scanId },

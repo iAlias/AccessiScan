@@ -13,7 +13,8 @@ test("capturePageContext returns a11y tree text + DOM excerpt for a live page", 
   const { port } = server.address() as AddressInfo;
   try {
     const browser = await getBrowser();
-    const ctx = await capturePageContext(browser, `http://127.0.0.1:${port}/`, []);
+    // inject a no-op URL validator: the test server is on loopback, which the real SSRF guard rejects
+    const ctx = await capturePageContext(browser, `http://127.0.0.1:${port}/`, [], undefined, async () => {});
     expect(ctx.a11yTree).toContain("Vai");
     expect(ctx.domExcerpt).toContain("Ciao");
   } finally {

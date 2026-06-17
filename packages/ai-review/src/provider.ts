@@ -13,7 +13,13 @@ export interface LlmProvider {
   evaluate(req: LlmRequest): Promise<unknown>;
 }
 
-export class LlmError extends Error {}
+export class LlmError extends Error {
+  retryable: boolean;
+  constructor(message: string, retryable = true) {
+    super(message);
+    this.retryable = retryable;
+  }
+}
 
 /** Deterministic provider for tests — validates the canned value against the schema. */
 export function fakeProvider(canned: unknown): LlmProvider {

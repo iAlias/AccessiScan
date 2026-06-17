@@ -41,7 +41,10 @@ export function anthropicProvider(opts: AnthropicOpts, fetchImpl: typeof fetch =
               messages: [{ role: "user", content: req.user }],
             }),
           });
-          if (!res.ok) throw new LlmError(`anthropic HTTP ${res.status}`);
+          if (!res.ok) {
+            const retryable = res.status === 408 || res.status === 429 || res.status >= 500;
+            throw new LlmError(`anthropic HTTP ${res.status}`, retryable);
+          }
           const data = (await res.json()) as { content?: Array<{ text?: string }> };
           const text = data.content?.map((c) => c.text ?? "").join("") ?? "";
           const parsed = (req.schema as ZodSchema).safeParse(extractJson(text));
@@ -49,6 +52,7 @@ export function anthropicProvider(opts: AnthropicOpts, fetchImpl: typeof fetch =
           return parsed.data;
         } catch (e) {
           lastErr = e;
+          if (e instanceof LlmError && !e.retryable) break;
         } finally {
           clearTimeout(timer);
         }

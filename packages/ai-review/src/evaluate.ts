@@ -14,14 +14,20 @@ export async function evaluateCluster(
   pageLevelScs: string[],
   opts: { verifyFails: boolean },
 ): Promise<ClusterVerdict[]> {
-  const verdicts = await runBatch(provider, buildClusterPrompt(ctx, pageLevelScs));
+  const requested = new Set(pageLevelScs);
+  // Drop hallucinated / out-of-scope criteria the model may have invented.
+  const verdicts = (await runBatch(provider, buildClusterPrompt(ctx, pageLevelScs))).filter((v) => requested.has(v.wcagSc));
   const result: ClusterVerdict[] = [];
   for (const v of verdicts) {
     if (v.verdict === "FAIL" && opts.verifyFails) {
-      const [refutation] = await runBatch(provider, buildVerifyPrompt(ctx, v));
-      if (refutation && refutation.verdict !== "FAIL") {
-        result.push({ ...v, verdict: "UNSURE", reasoning: `FAIL non confermato in verifica: ${refutation.reasoning}`, url: ctx.url });
-        continue;
+      try {
+        const [refutation] = await runBatch(provider, buildVerifyPrompt(ctx, v));
+        if (refutation && refutation.verdict !== "FAIL") {
+          result.push({ ...v, verdict: "UNSURE", reasoning: `FAIL non confermato in verifica: ${refutation.reasoning}`, url: ctx.url });
+          continue;
+        }
+      } catch {
+        // verify failed (e.g. provider error) — keep the original FAIL rather than aborting the whole pass
       }
     }
     result.push({ ...v, url: ctx.url });
@@ -35,6 +41,7 @@ export async function evaluateSite(
   siteLevelScs: string[],
 ): Promise<ClusterVerdict[]> {
   if (siteLevelScs.length === 0 || samples.length === 0) return [];
-  const verdicts = await runBatch(provider, buildSitePrompt(samples, siteLevelScs));
+  const requested = new Set(siteLevelScs);
+  const verdicts = (await runBatch(provider, buildSitePrompt(samples, siteLevelScs))).filter((v) => requested.has(v.wcagSc));
   return verdicts.map((v) => ({ ...v, url: samples[0]!.url }));
 }

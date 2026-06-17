@@ -43,12 +43,17 @@ export function openAiCompatibleProvider(opts: OpenAiOpts, fetchImpl: typeof fet
               temperature: 0,
             }),
           });
-          if (!res.ok) throw new LlmError(`provider HTTP ${res.status}`);
+          if (!res.ok) {
+            // 4xx (bad key, bad request) won't recover by retrying; 408/429/5xx may.
+            const retryable = res.status === 408 || res.status === 429 || res.status >= 500;
+            throw new LlmError(`provider HTTP ${res.status}`, retryable);
+          }
           const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
           const content = data.choices?.[0]?.message?.content ?? "";
           return validate(req.schema, extractJson(content));
         } catch (e) {
           lastErr = e;
+          if (e instanceof LlmError && !e.retryable) break;
         } finally {
           clearTimeout(timer);
         }

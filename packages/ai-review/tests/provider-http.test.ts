@@ -16,6 +16,13 @@ test("openai-compatible provider parses JSON content and validates it", async ()
   expect(body.messages[0].role).toBe("system");
 });
 
+test("does not retry on a non-retryable 4xx (e.g. 401)", async () => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response("nope", { status: 401 }));
+  const provider = openAiCompatibleProvider({ model: "m", baseUrl: "https://x/v1", apiKey: "k", maxRetries: 3 }, fetchMock as unknown as typeof fetch);
+  await expect(provider.evaluate({ system: "s", user: "u", schema: aiVerdictSchema })).rejects.toThrow();
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
 test("retries once on malformed JSON then throws", async () => {
   const fetchMock = vi.fn()
     .mockResolvedValueOnce(jsonResponse("not json"))

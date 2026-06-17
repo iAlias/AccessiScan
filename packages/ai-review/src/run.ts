@@ -11,7 +11,7 @@ export interface AiReviewDeps {
   provider: LlmProvider;
   loadPages: (scanId: string) => Promise<PageRef[]>;
   pendingCriteria: (scanId: string) => Promise<string[]>; // wcagSc currently NEEDS_MANUAL_REVIEW
-  capture: (url: string, axe: PageContext["axeFindings"]) => Promise<PageContext>;
+  capture: (rep: PageRef) => Promise<PageContext>;
   persist: (scanId: string, suggestions: AiSuggestion[]) => Promise<void>;
   setStatus: (s: RunStatus) => void;
   shouldCancel: () => Promise<boolean>;
@@ -35,7 +35,7 @@ export async function runAiReview(scanId: string, deps: AiReviewDeps): Promise<v
   for (let i = 0; i < clusters.length; i++) {
     if (await deps.shouldCancel()) return;
     let ctx: PageContext;
-    try { ctx = await deps.capture(clusters[i]!.representative.url, []); }
+    try { ctx = await deps.capture(clusters[i]!.representative); }
     catch { deps.setStatus({ phase: "evaluate", clustersDone: i + 1, clustersTotal: clusters.length }); continue; }
     contexts.push(ctx);
     const verdicts = await evaluateCluster(deps.provider, ctx, pageScs, { verifyFails: true });

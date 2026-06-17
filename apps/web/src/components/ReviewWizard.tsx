@@ -22,6 +22,7 @@ export function ReviewWizard({ scanId, steps, initialCriteria, initialVerdict }:
   const [verdict, setVerdict] = useState<Verdict | null>(initialVerdict);
   const [current, setCurrent] = useState(steps[0]?.id ?? 1);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
 
   const stepInfos = useMemo(() => steps.map((s) => ({
     id: s.id, title: s.title,
@@ -31,15 +32,20 @@ export function ReviewWizard({ scanId, steps, initialCriteria, initialVerdict }:
   const step = steps.find((s) => s.id === current) ?? steps[0];
 
   async function decide(wcagSc: string, decision: "PASS" | "FAIL") {
-    const res = await fetch(`/api/scans/${scanId}/criteria/${wcagSc}/review`, {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ decision, note: notes[wcagSc] || undefined }),
-    });
-    if (!res.ok) return;
-    const { verdict: v } = (await res.json()) as { verdict: Verdict };
-    setVerdict(v);
-    setCriteria((prev) => ({ ...prev, [wcagSc]: { ...prev[wcagSc]!, state: decision as CriterionState, source: "MANUAL", reviewNote: notes[wcagSc] ?? null } }));
-    router.refresh();
+    setError(null);
+    try {
+      const res = await fetch(`/api/scans/${scanId}/criteria/${wcagSc}/review`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ decision, note: notes[wcagSc] || undefined }),
+      });
+      if (!res.ok) { setError(`Impossibile salvare la decisione su ${wcagSc}. Riprova.`); return; }
+      const { verdict: v } = (await res.json()) as { verdict: Verdict };
+      setVerdict(v);
+      setCriteria((prev) => ({ ...prev, [wcagSc]: { ...prev[wcagSc]!, state: decision as CriterionState, source: "MANUAL", reviewNote: notes[wcagSc] ?? null } }));
+      router.refresh();
+    } catch {
+      setError(`Errore di rete sul criterio ${wcagSc}. Riprova.`);
+    }
   }
 
   return (
@@ -48,6 +54,7 @@ export function ReviewWizard({ scanId, steps, initialCriteria, initialVerdict }:
         Verdetto corrente: <VerdictPill verdict={verdict} />
         {verdict === "CONFORME" && <strong> — Conforme sbloccato.</strong>}
       </div>
+      {error && <p role="alert" className="domain-card__flag">{error}</p>}
       <div className="review-layout">
         <ReviewStepper steps={stepInfos} current={current} />
         <section className="review-panel" aria-label={`Step ${step?.id}`}>
