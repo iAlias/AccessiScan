@@ -76,9 +76,10 @@ export function markScanDone(scanId: string, pagesScanned: number): Promise<Scan
   });
 }
 
-export function markScanFailed(scanId: string): Promise<Scan> {
-  return prisma.scan.update({
-    where: { id: scanId },
+/** Mark FAILED only if still in flight — never overwrite a DONE or CANCELED scan. */
+export async function markScanFailed(scanId: string): Promise<void> {
+  await prisma.scan.updateMany({
+    where: { id: scanId, status: { in: ["QUEUED", "RUNNING"] } },
     data: { status: "FAILED", finishedAt: new Date() },
   });
 }

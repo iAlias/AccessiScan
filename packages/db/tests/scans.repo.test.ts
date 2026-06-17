@@ -48,6 +48,19 @@ test("markScanFailed sets FAILED", async () => {
   expect((await prisma.scan.findUnique({ where: { id: scan.id } }))?.status).toBe("FAILED");
 });
 
+test("markScanFailed never clobbers a DONE or CANCELED scan", async () => {
+  const d = await seedDomain();
+  const done = await createScan(d.id);
+  await markScanDone(done.id, 1);
+  await markScanFailed(done.id);
+  expect((await prisma.scan.findUnique({ where: { id: done.id } }))?.status).toBe("DONE");
+
+  const canceled = await createScan(d.id);
+  await prisma.scan.update({ where: { id: canceled.id }, data: { status: "CANCELED" } });
+  await markScanFailed(canceled.id);
+  expect((await prisma.scan.findUnique({ where: { id: canceled.id } }))?.status).toBe("CANCELED");
+});
+
 test("persistPageWithIssues records authState (defaults ANON)", async () => {
   const d = await seedDomain();
   const scan = await createScan(d.id);

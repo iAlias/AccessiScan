@@ -24,3 +24,11 @@ test("toCsv quotes fields containing commas/quotes/newlines", () => {
   expect(csv).toContain('"a,b"');
   expect(csv).toContain('"say ""hi"""');
 });
+
+test("toCsv neutralizes spreadsheet formula injection in cells", () => {
+  const model = { ...base, issues: [{ pageUrl: "https://a.it/", ruleId: "r", wcagSc: null, en301549Clause: null, impact: null, targetSelector: "=HYPERLINK(1)", help: "@cmd", helpUrl: null, failureSummary: null }] } as unknown as ReportModel;
+  const csv = toCsv(model);
+  // leading =/@ are prefixed with ' so a spreadsheet treats them as text
+  expect(csv).toContain("'=HYPERLINK(1)");
+  expect(csv).toContain("'@cmd");
+});

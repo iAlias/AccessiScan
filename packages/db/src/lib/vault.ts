@@ -100,14 +100,12 @@ function decodeMasterKey(keyId: string, envName: string): Buffer {
         `(expected env var ${envName} to be set to a base64-encoded 32-byte key).`,
     );
   }
-  let key: Buffer;
-  try {
-    key = Buffer.from(raw, "base64");
-  } catch {
-    throw new Error(
-      `Credential vault: ${envName} is not valid base64 (keyId "${keyId}").`,
-    );
+  // Buffer.from(..,"base64") is lenient and never throws, so validate the format
+  // explicitly instead of relying on a catch that can never fire.
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(raw)) {
+    throw new Error(`Credential vault: ${envName} is not valid base64 (keyId "${keyId}").`);
   }
+  const key = Buffer.from(raw, "base64");
   if (key.length !== KEY_LEN) {
     throw new Error(
       `Credential vault: ${envName} must decode to exactly ${KEY_LEN} bytes, ` +

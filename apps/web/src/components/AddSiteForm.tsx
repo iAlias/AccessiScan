@@ -15,7 +15,8 @@ export function AddSiteForm() {
     try {
       const res = await fetch("/api/sites", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ url: url.trim() }) });
       if (res.ok) { setUrl(""); setMsg("Sito aggiunto, scansione avviata."); router.refresh(); }
-      else { const b = await res.json().catch(() => ({})); setMsg((b as { error?: unknown }).error ? "URL non valido (usa http:// o https://)." : "Errore."); }
+      else if (res.status === 400) setMsg("URL non valido (usa http:// o https://).");
+      else setMsg("Errore, riprova.");
     } catch {
       setMsg("Errore di rete, riprova.");
     } finally { setBusy(false); }

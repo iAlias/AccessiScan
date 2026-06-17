@@ -1,7 +1,10 @@
 import type { ReportModel } from "./report-model.js";
 
 function cell(v: string | null): string {
-  const s = v ?? "";
+  let s = v ?? "";
+  // Neutralize spreadsheet formula injection: a leading =,+,-,@,tab,CR makes Excel/
+  // Sheets evaluate the cell. Prefix with a single quote so it is treated as text.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

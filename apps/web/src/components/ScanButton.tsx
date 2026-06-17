@@ -38,6 +38,8 @@ export function ScanButton({ domainId }: { domainId: string }) {
   async function poll(id: string) {
     try {
       const r = await fetch(`/api/scans/${id}/status`);
+      // Terminal client errors won't recover — stop polling instead of looping forever.
+      if (r.status === 401 || r.status === 403 || r.status === 404) { stopTimer(); return; }
       if (!r.ok) return;
       const s = (await r.json()) as ScanStatus;
       setSt(s);
@@ -66,7 +68,11 @@ export function ScanButton({ domainId }: { domainId: string }) {
 
   async function cancel() {
     if (!scanId) return;
-    try { await fetch(`/api/scans/${scanId}/cancel`, { method: "POST" }); } catch { /* ignore */ }
+    try {
+      await fetch(`/api/scans/${scanId}/cancel`, { method: "POST" });
+      // Reflect the new state immediately (cancelled, or already terminal on a 409).
+      void poll(scanId);
+    } catch { /* ignore */ }
   }
 
   const running = st ? (st.status === "RUNNING" || st.status === "QUEUED") : false;

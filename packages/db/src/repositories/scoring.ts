@@ -39,8 +39,14 @@ export async function loadCurrentScanIssues(scanId: string): Promise<PersistedIs
 }
 
 export async function getPreviousScanIssues(domainId: string, beforeScanId: string): Promise<PersistedIssueRow[]> {
+  const current = await prisma.scan.findUnique({ where: { id: beforeScanId }, select: { createdAt: true } });
   const prev = await prisma.scan.findFirst({
-    where: { domainId, status: "DONE", id: { not: beforeScanId } },
+    where: {
+      domainId,
+      status: "DONE",
+      id: { not: beforeScanId },
+      ...(current ? { createdAt: { lt: current.createdAt } } : {}),
+    },
     orderBy: { createdAt: "desc" },
   });
   if (!prev) return [];
@@ -55,15 +61,21 @@ export async function persistScanScoring(input: {
   currIssues: PersistedIssueRow[];
 }): Promise<void> {
   const { scanId, analysis } = input;
-  const mod = await import("@accessscan/scanner") as { computeScanDiff: (a: never, b: never) => { newIssues: string[]; fixedIssues: string[]; persistentIssues: string[] } };
-  const diff = mod.computeScanDiff(input.prevIssues as never, input.currIssues as never);
+  // Dynamic import breaks the db→scanner cycle; type it to the db-side row shape
+  // (structurally compatible with the scanner's PersistedIssue) so the call is checked.
+  const mod = await import("@accessscan/scanner") as {
+    computeScanDiff: (a: PersistedIssueRow[], b: PersistedIssueRow[]) => { newIssues: string[]; fixedIssues: string[]; persistentIssues: string[] };
+  };
+  const diff = mod.computeScanDiff(input.prevIssues, input.currIssues);
 
   await prisma.$transaction(async (tx) => {
     await tx.scan.update({
       where: { id: scanId },
       data: { score: analysis.siteScore, verdict: analysis.verdict, coverageRatio: analysis.coverageRatio },
     });
-    const pages = await tx.page.findMany({ where: { scanId }, orderBy: { scannedAt: "asc" } });
+    // pageScores are in scan order; persist order matches insertion order, so add
+    // a deterministic `id` tiebreaker for pages whose scannedAt collide.
+    const pages = await tx.page.findMany({ where: { scanId }, orderBy: [{ scannedAt: "asc" }, { id: "asc" }] });
     for (let i = 0; i < pages.length; i++) {
       const ps = analysis.pageScores[i];
       if (ps !== undefined) await tx.page.update({ where: { id: pages[i]!.id }, data: { pageScore: ps } });

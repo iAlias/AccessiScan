@@ -14,6 +14,13 @@ function safeScope(url: string): string {
   }
 }
 
+/** Honour the configured include/exclude URL filters (substring match). */
+function passesPatterns(url: string, cfg: CrawlConfig): boolean {
+  if (cfg.excludePatterns.some((p) => p && url.includes(p))) return false;
+  if (cfg.includePatterns.length > 0 && !cfg.includePatterns.some((p) => p && url.includes(p))) return false;
+  return true;
+}
+
 export interface FetchResult {
   status: number;
   finalUrl: string;
@@ -53,7 +60,7 @@ export async function crawl(startUrl: string, cfg: CrawlConfig, deps: CrawlDeps)
   for (const seed of deps.seeds ?? []) {
     const c = canonicalizeUrl(seed);
     if (!c || visited.has(c)) continue;
-    if (safeScope(c) !== rootDomain) continue;
+    if (safeScope(c) !== rootDomain || !passesPatterns(c, cfg)) continue;
     visited.add(c);
     queue.push({ url: c, depth: 0, via: "SITEMAP" });
   }
@@ -80,7 +87,7 @@ export async function crawl(startUrl: string, cfg: CrawlConfig, deps: CrawlDeps)
       const c = canonicalizeUrl(raw, res.finalUrl);
       if (!c || visited.has(c)) continue;
       const dom = safeScope(c);
-      if (!dom || dom !== rootDomain || !isAllowed(c)) continue;
+      if (!dom || dom !== rootDomain || !isAllowed(c) || !passesPatterns(c, cfg)) continue;
       visited.add(c);
       if (visited.size > cfg.maxPages * 10) break;
       queue.push({ url: c, depth: depth + 1, via: "BFS" });
