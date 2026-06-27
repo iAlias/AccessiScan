@@ -82,9 +82,11 @@ export interface PageIssue {
   id: string;
   ruleId: string;
   wcagSc: string | null;
+  en301549Clause: string | null;
   impact: Impact | null;
   help: string | null;
   helpUrl: string | null;
+  htmlSnippet: string | null;
   targetSelector: string;
   failureSummary: string | null;
   occurrenceCount: number;
@@ -95,8 +97,8 @@ export async function getPageIssues(scanId: string, pageId: string): Promise<Pag
   const issues = await prisma.issue.findMany({
     where: { scanId, pageId },
     select: {
-      id: true, ruleId: true, wcagSc: true, impact: true, help: true,
-      helpUrl: true, targetSelector: true, failureSummary: true, occurrenceCount: true,
+      id: true, ruleId: true, wcagSc: true, en301549Clause: true, impact: true, help: true,
+      helpUrl: true, htmlSnippet: true, targetSelector: true, failureSummary: true, occurrenceCount: true,
     },
   });
   return issues.sort(

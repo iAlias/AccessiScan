@@ -1,5 +1,5 @@
 import { SeverityChip } from "./SeverityChip.js";
-import { formatInt, type Impact } from "@/lib/format.js";
+import { formatInt, safeExternalHref, type Impact } from "@/lib/format.js";
 import { wcagTitle } from "@/lib/wcag-criteria.js";
 
 export interface RuleRow {
@@ -36,10 +36,10 @@ export function IssueSummary({ rules }: { rules: RuleRow[] }) {
               <p className="issue-summary__meta">
                 {r.wcagSc ? <>Criterio {r.wcagSc}{title ? ` ${title}` : ""} · </> : null}
                 {formatInt(r.affectedPages)} pagine colpite
-                {r.helpUrl ? (
+                {safeExternalHref(r.helpUrl) ? (
                   <>
                     {" · "}
-                    <a href={r.helpUrl} target="_blank" rel="noreferrer">Come correggere</a>
+                    <a href={safeExternalHref(r.helpUrl)!} target="_blank" rel="noreferrer">Come correggere</a>
                   </>
                 ) : null}
               </p>

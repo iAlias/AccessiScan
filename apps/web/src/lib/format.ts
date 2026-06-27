@@ -65,3 +65,19 @@ export function impactTone(i: Impact | null | undefined): "critical" | "serious"
 export function formatInt(n: number): string {
   return new Intl.NumberFormat("it-IT").format(n);
 }
+
+/**
+ * Returns the URL only if it is a plain http(s) link, else null. Defence-in-depth
+ * for hrefs whose value originates outside the app (issue helpUrls): React escapes
+ * text but NOT attribute schemes, so a `javascript:`/`data:` URL would otherwise be
+ * clickable. Render the link only when this returns non-null.
+ */
+export function safeExternalHref(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return u.protocol === "http:" || u.protocol === "https:" ? url : null;
+  } catch {
+    return null;
+  }
+}

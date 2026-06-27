@@ -1,6 +1,6 @@
 import { ScoreRing } from "./ScoreRing.js";
 import { VerdictPill } from "./VerdictPill.js";
-import { formatDate, formatInt, type Verdict } from "@/lib/format.js";
+import { formatDate, formatInt, coverageLabel, type Verdict } from "@/lib/format.js";
 
 export interface ReportKpiData {
   score: number | null;
@@ -11,6 +11,9 @@ export interface ReportKpiData {
   failCount: number;
   manualCount: number;
   passCount: number;
+  naCount: number;
+  /** Share of criteria decided with certainty (0..1), or null when none. */
+  completeness: number | null;
 }
 
 function Kpi({ label, value, tone, hint }: { label: string; value: string; tone?: "fail" | "warn" | "ok"; hint?: string }) {
@@ -39,9 +42,16 @@ export function ReportKpis(d: ReportKpiData) {
       <dl className="kpi-grid">
         <Kpi label="Pagine analizzate" value={formatInt(d.pagesScanned)} />
         <Kpi label="Problemi rilevati" value={formatInt(d.totalIssues)} hint="finding distinti (deduplicati per pagina)" />
+        <Kpi
+          label="Completezza valutazione"
+          value={coverageLabel(d.completeness)}
+          tone={d.completeness === null ? undefined : d.completeness < 1 ? "warn" : "ok"}
+          hint="quota di criteri decisi con certezza (il resto richiede verifica manuale)"
+        />
         <Kpi label="Criteri falliti" value={String(d.failCount)} tone={d.failCount > 0 ? "fail" : undefined} hint="bocciati dai controlli automatici" />
         <Kpi label="Da verificare a mano" value={String(d.manualCount)} tone={d.manualCount > 0 ? "warn" : undefined} hint="l'automazione non può decidere: serve test manuale" />
         <Kpi label="Criteri superati" value={String(d.passCount)} tone={d.passCount > 0 ? "ok" : undefined} />
+        <Kpi label="Non applicabile" value={String(d.naCount)} hint="criteri non pertinenti alla pagina" />
       </dl>
     </section>
   );

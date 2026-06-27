@@ -11,6 +11,10 @@ import { ComparisonCard } from "@/components/ComparisonCard.js";
 import { CriterionList } from "@/components/CriterionList.js";
 import { ExportBar } from "@/components/ExportBar.js";
 import { AiReviewButton } from "@/components/AiReviewButton.js";
+import { ReportViews } from "@/components/ReportViews.js";
+import { EndUserView } from "@/components/EndUserView.js";
+import { DeveloperView } from "@/components/DeveloperView.js";
+import { computeCompleteness } from "@/lib/report-views.js";
 import { type CriterionState } from "@/lib/format.js";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +38,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const failCount = criteria.filter((c) => c.state === "FAIL").length;
   const manualCount = criteria.filter((c) => c.state === "NEEDS_MANUAL_REVIEW").length;
   const passCount = criteria.filter((c) => c.state === "PASS").length;
+  const naCount = criteria.filter((c) => c.state === "NOT_APPLICABLE").length;
+  const completeness = computeCompleteness({ pass: passCount, fail: failCount, na: naCount, needsReview: manualCount });
   const totalIssues = pages.reduce((sum, p) => sum + p.issueCount, 0);
 
   return (
@@ -53,6 +59,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         failCount={failCount}
         manualCount={manualCount}
         passCount={passCount}
+        naCount={naCount}
+        completeness={completeness}
       />
 
       <ExportBar scanId={core.id} />
@@ -61,17 +69,42 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       )}
       {session.user?.role === "ADMIN" && <AiReviewButton scanId={core.id} />}
 
-      <h2>Problemi principali</h2>
-      <IssueSummary rules={rules} />
+      <ReportViews
+        views={[
+          {
+            key: "summary",
+            label: "Riepilogo",
+            icon: "ℹ",
+            panel: (
+              <>
+                <h2>Problemi principali</h2>
+                <IssueSummary rules={rules} />
 
-      <h2>Confronto con la scansione precedente</h2>
-      <ComparisonCard cmp={cmp} />
+                <h2>Confronto con la scansione precedente</h2>
+                <ComparisonCard cmp={cmp} />
 
-      <h2>Pagine analizzate</h2>
-      <PagesTable scanId={core.id} pages={pages} />
+                <h2>Pagine analizzate</h2>
+                <PagesTable scanId={core.id} pages={pages} />
 
-      <h2>Esito dei criteri ({criteria.length})</h2>
-      <CriterionList rows={criteria} />
+                <h2>Esito dei criteri ({criteria.length})</h2>
+                <CriterionList rows={criteria} />
+              </>
+            ),
+          },
+          {
+            key: "enduser",
+            label: "Utente finale",
+            icon: "👤",
+            panel: <EndUserView rows={criteria} />,
+          },
+          {
+            key: "developer",
+            label: "Sviluppatore",
+            icon: "</>",
+            panel: <DeveloperView scanId={core.id} pages={pages} />,
+          },
+        ]}
+      />
     </div>
   );
 }

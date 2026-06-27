@@ -81,6 +81,11 @@ test("getPageIssues returns that page's issues, severity-sorted", async () => {
   const page = (await getPageSummaries(scan.id))[0]!;
   const issues = await getPageIssues(scan.id, page.id);
   expect(issues.map((i) => i.ruleId)).toEqual(["image-alt", "link-name"]); // critical before moderate
+  // Developer view needs the offending HTML + WCAG/EN references per issue.
+  const img = issues.find((i) => i.ruleId === "image-alt")!;
+  expect(img.htmlSnippet).toBe("<img>");
+  expect(img.en301549Clause).toBe("9.1.1.1");
+  expect(img.wcagSc).toBe("1.1.1");
 });
 
 test("getScanComparison reports deltas vs previous DONE scan", async () => {

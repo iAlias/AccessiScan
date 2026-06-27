@@ -45,7 +45,7 @@ it("report composition: zero violations", async () => {
     { id: "p2", url: "https://a.it/light", issueCount: 0 },
   ];
   const body = h("div", null,
-    h(ReportKpis, { score: 79, verdict: "NON_CONFORME", pagesScanned: 500, totalIssues: 31227, finishedAt: "2026-06-14T00:00:00Z", failCount: 7, manualCount: 43, passCount: 0 }),
+    h(ReportKpis, { score: 79, verdict: "NON_CONFORME", pagesScanned: 500, totalIssues: 31227, finishedAt: "2026-06-14T00:00:00Z", failCount: 7, manualCount: 43, passCount: 0, naCount: 0, completeness: 0.14 }),
     h("h2", null, "Problemi principali"),
     h(IssueSummary, { rules }),
     h("h2", null, "Confronto"),
