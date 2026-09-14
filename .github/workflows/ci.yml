@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Unit, integration & browser tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: accessscan
+          POSTGRES_PASSWORD: accessscan
+          POSTGRES_DB: accessscan
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U accessscan"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://accessscan:accessscan@localhost:5432/accessscan?schema=public
+      REDIS_URL: redis://localhost:6379
+      AUTH_SECRET: ci-only-secret-not-used-in-production
+      ACCESSSCAN_ALLOW_LOOPBACK: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Create test environment
+        run: |
+          VAULT_KEY="$(node -e "process.stdout.write(require('crypto').randomBytes(32).toString('base64'))")"
+          cat > .env.test <<EOF
+          DATABASE_URL=${DATABASE_URL}
+          REDIS_URL=${REDIS_URL}
+          AUTH_SECRET=${AUTH_SECRET}
+          VAULT_MASTER_KEY=${VAULT_KEY}
+          ACCESSSCAN_ALLOW_LOOPBACK=1
+          EOF
+
+      - name: Apply database migrations
+        run: pnpm db:migrate:test
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @accessscan/scanner exec playwright install --with-deps chromium
+
+      - name: Run unit & integration tests
+        run: pnpm test
+
+      - name: Run browser tests
+        run: pnpm test:browser
