@@ -7,6 +7,11 @@
 [![pnpm](https://img.shields.io/badge/pnpm-9-orange.svg)](https://pnpm.io)
 [![Next.js 15](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
 
+> **Part of a small web-compliance toolkit.** AccessiScan tells you *what* is wrong with a
+> site; pair it with [**OpenConsent**](https://github.com/iAlias/openconsent) — a lightweight,
+> dependency-free GDPR consent banner with Google Consent Mode v2 — to fix the consent side of
+> the same audit.
+
 ---
 
 ## Table of Contents
